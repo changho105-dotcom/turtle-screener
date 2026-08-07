@@ -19,7 +19,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const krSource = require('../lib/krSource');
+// krSource는 현재 국내(KR) 컷오프로 이 스크립트에서 미사용 - 재개 시 require('../lib/krSource')로 다시 추가
 const usSource = require('../lib/usSource');
 const { CONFIG, computeNSeries, donchianHigh, donchianLow, passesLiquidity } = require('../lib/turtleIndicators');
 const { runBatched } = require('../lib/batch');
@@ -32,26 +32,18 @@ const USD_CAPITAL_KRW_EQUIV = 50_000_000;
 const RECENT_DAYS_BACK = 220; // 달력일 - N(20일)+최대채널(55일) 계산에 충분한 최근 구간만 사용
 
 // ⚠️ 국내(KR)는 2025-11~2026년 상반기 코스피 버블+폭락 구간을 제외하기 위해 krSource.js에서
-// 조회 종료일을 2025-10-31로 고정해놨습니다(사용자 지시, 2026-08-07). 이 스크립트가 "오늘"
-// 기준으로 recentSince()를 계산하면 국내는 since(오늘-220일) > until(2025-10-31)이 되어 조회
-// 자체가 깨지므로, 국내는 이 고정 종료일 기준으로 최근 구간을 계산합니다. 즉 국내 포지션 관리/
-// 신규진입 스캔은 실질적으로 "2025-10-31 시점"에 멈춰 있는 상태입니다 - 매일 실행해도 같은
-// 데이터를 다시 보게 되므로, 이 컷오프가 유지되는 동안은 국내 신규 진입은 하지 않습니다
-// (아래 main()의 KR 섹션 참고). 커트오프를 풀거나 조정하려면 krSource.js의 HISTORY_END_KR 수정.
-const KR_FROZEN_UNTIL = krSource.HISTORY_END_KR;
+// 조회 종료일을 2025-10-31(krSource.HISTORY_END_KR)로 고정해놨습니다(사용자 지시, 2026-08-07).
+// 이 스크립트가 "오늘" 기준으로 recentSince()를 계산하면 국내는 since(오늘-220일) >
+// until(2025-10-31)이 되어 조회 자체가 깨지므로, 아래 main()의 KR 섹션은 관리/신규진입을
+// 통째로 건너뜁니다(관련 함수 호출 자체를 안 함). 컷오프를 풀면 US처럼 recentSince()를 넘겨서
+// managePositions/scanCandidates를 다시 호출하면 됩니다.
 
 function today() { return new Date().toISOString().slice(0, 10); }
 function round(v, digits = 2) { const m = Math.pow(10, digits); return Math.round(v * m) / m; }
-function addDays(dateStr, delta) {
-  const d = new Date(`${dateStr}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + delta);
+function recentSince() { // 오늘 기준 최근 구간 시작일 (현재는 US에만 사용 - KR은 위 설명 참고)
+  const d = new Date();
+  d.setDate(d.getDate() - RECENT_DAYS_BACK);
   return d.toISOString().slice(0, 10);
-}
-function recentSince() { // US용 - 실제 오늘 기준
-  return addDays(today(), -RECENT_DAYS_BACK);
-}
-function recentSinceKR() { // KR용 - 고정된 KR_FROZEN_UNTIL 기준
-  return addDays(KR_FROZEN_UNTIL, -RECENT_DAYS_BACK);
 }
 
 function loadState() {

@@ -70,7 +70,7 @@
   .system-block { margin-bottom: 26px; }
   .system-block-title { font-family: var(--mono); font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
   .reason-tag { font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; background: #1A1F26; color: var(--muted); }
-  .lookback-select, .system-select {
+  .system-select {
     background: var(--panel); border: 1px solid var(--border); color: var(--text);
     font-family: var(--mono); font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer;
   }
@@ -498,13 +498,13 @@ async function loadChart(ticker, market) {
       try { const b = await res.json(); if (b.error) detail = b.error; } catch (_) {}
       throw new Error(detail);
     }
-    renderChart(await res.json());
+    renderChart(await res.json(), market);
   } catch (err) {
     document.getElementById('chartModalBody').innerHTML = `<div class="error">차트 불러오기 실패: ${err.message}</div>`;
   }
 }
 
-function renderChart(data) {
+function renderChart(data, market) {
   const { dates, closes, volumes, levels } = data;
   if (!closes || !closes.length) {
     document.getElementById('chartModalBody').innerHTML = '<div class="error">차트 데이터가 없습니다.</div>';
@@ -578,7 +578,7 @@ function renderChart(data) {
       ${levels.S1.stopLevel || levels.S2.stopLevel ? `<span><span class="dot" style="background:var(--down);"></span>2N손절</span>` : ''}
       <span style="color:#2A2F37;">■ 거래량</span>
     </div>
-    <div style="font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:6px;">최근 ${closes.length}봉만 표시(전체 이력은 2010년부터지만 차트는 최근 구간만)</div>`;
+    <div style="font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:6px;">최근 ${closes.length}봉만 표시(전체 이력은 2010년부터지만 차트는 최근 구간만)${market === 'kr' ? ' · <span style="color:var(--down);">국내는 2025-10-31 데이터 컷오프로 그 시점까지만 표시됨</span>' : ''}</div>`;
 }
 
 load('kr');
