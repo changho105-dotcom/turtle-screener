@@ -1,0 +1,164 @@
+{
+  "startDate": "2026-08-07",
+  "dayCount": 1,
+  "kr": {
+    "cash": 396180,
+    "positions": [
+      {
+        "ticker": "025900",
+        "name": "동화기업",
+        "market": "KOSDAQ",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-07",
+            "entryPrice": 7870,
+            "shares": 886,
+            "nAtEntry": 564.0019085646763
+          }
+        ],
+        "stopPrice": 6741.996182870647,
+        "nextAddPrice": 8152.000954282338
+      },
+      {
+        "ticker": "282330",
+        "name": "BGF리테일",
+        "market": "KOSPI",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-07",
+            "entryPrice": 153800,
+            "shares": 65,
+            "nAtEntry": 7618.074323835916
+          }
+        ],
+        "stopPrice": 138563.85135232817,
+        "nextAddPrice": 157609.03716191795
+      },
+      {
+        "ticker": "282330",
+        "name": "BGF리테일",
+        "market": "KOSPI",
+        "system": "S2",
+        "units": [
+          {
+            "entryDate": "2026-08-07",
+            "entryPrice": 153800,
+            "shares": 65,
+            "nAtEntry": 7618.074323835916
+          }
+        ],
+        "stopPrice": 138563.85135232817,
+        "nextAddPrice": 157609.03716191795
+      },
+      {
+        "ticker": "347700",
+        "name": "스피어",
+        "market": "KOSDAQ",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-07",
+            "entryPrice": 23150,
+            "shares": 166,
+            "nAtEntry": 3001.415516979746
+          }
+        ],
+        "stopPrice": 17147.16896604051,
+        "nextAddPrice": 24650.707758489873
+      },
+      {
+        "ticker": "007070",
+        "name": "GS리테일",
+        "market": "KOSPI",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-07",
+            "entryPrice": 28300,
+            "shares": 319,
+            "nAtEntry": 1566.2081887972258
+          }
+        ],
+        "stopPrice": 25167.58362240555,
+        "nextAddPrice": 29083.10409439861
+      },
+      {
+        "ticker": "008930",
+        "name": "한미사이언스",
+        "market": "KOSPI",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-07",
+            "entryPrice": 44800,
+            "shares": 218,
+            "nAtEntry": 2283.8575239049464
+          }
+        ],
+        "stopPrice": 40232.28495219011,
+        "nextAddPrice": 45941.92876195248
+      }
+    ],
+    "realizedPnl": 0,
+    "trades": []
+  },
+  "us": {
+    "cashUsd": 5756.92414217897,
+    "startCapitalUsd": 35209.285073575455,
+    "fxRateAtStart": 1420.0799560546875,
+    "positions": [
+      {
+        "ticker": "INSM",
+        "name": "Insmed Incorporated",
+        "market": "US",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-07",
+            "entryPrice": 132.5500030517578,
+            "shares": 59,
+            "nAtEntry": 5.886974815602416
+          }
+        ],
+        "stopPrice": 120.77605342055298,
+        "nextAddPrice": 135.493490459559
+      },
+      {
+        "ticker": "INSM",
+        "name": "Insmed Incorporated",
+        "market": "US",
+        "system": "S2",
+        "units": [
+          {
+            "entryDate": "2026-08-07",
+            "entryPrice": 132.5500030517578,
+            "shares": 59,
+            "nAtEntry": 5.886974815602416
+          }
+        ],
+        "stopPrice": 120.77605342055298,
+        "nextAddPrice": 135.493490459559
+      },
+      {
+        "ticker": "BDX",
+        "name": "Becton Dickinson",
+        "market": "US",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-07",
+            "entryPrice": 177.07000732421875,
+            "shares": 78,
+            "nAtEntry": 4.4749087413648345
+          }
+        ],
+        "stopPrice": 168.1201898414891,
+        "nextAddPrice": 179.30746169490118
+      }
+    ],
+    "realizedPnl": 0,
+    "trades": []
+  }
+}

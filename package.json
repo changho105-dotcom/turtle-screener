@@ -1,0 +1,17 @@
+{
+  "name": "turtle-screener",
+  "version": "1.0.0",
+  "description": "터틀 트레이딩(리처드 데니스/윌리엄 에크하르트) 시스템 스크리너 - 코스피/코스닥 + 미국주식",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "csv-parse": "^5.6.0",
+    "express": "^4.22.2",
+    "iconv-lite": "^0.7.3",
+    "node-cache": "^5.1.2",
+    "node-fetch": "^2.7.0"
+  }
+}

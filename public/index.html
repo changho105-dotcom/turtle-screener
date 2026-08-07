@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>터틀 트레이딩 스크리너</title>
+<style>
+  :root {
+    --bg: #0B0E11;
+    --panel: #12161C;
+    --border: #21262D;
+    --text: #E6E8EB;
+    --muted: #7A8290;
+    --up: #2ECB70;
+    --down: #F0554F;
+    --amber: #E8A33D;
+    --blue: #4B9EFF;
+    --purple: #B084F5;
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  header { padding: 20px 24px 12px; border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; font-weight: 600; }
+  .tabs { display: flex; gap: 6px; }
+  .tab { padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: var(--mono); font-size: 13px; cursor: pointer; }
+  .tab.active { background: var(--panel); color: var(--text); border-color: #3A4149; }
+
+  .system-strip { display: flex; gap: 28px; padding: 14px 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .system-strip .grp { display: flex; gap: 14px; align-items: center; }
+  .system-strip b { color: var(--text); }
+  .sys-tag { font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+  .sys-tag.S1 { background: rgba(232,163,61,0.18); color: var(--amber); }
+  .sys-tag.S2 { background: rgba(75,158,255,0.18); color: var(--blue); }
+
+  main { padding: 20px 24px; }
+  .meta { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 10px; color: var(--muted); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 10px; border-bottom: 1px solid #191D23; font-family: var(--mono); vertical-align: top; }
+  td.name { font-family: var(--sans); }
+  tr:hover td { background: #151A21; }
+  .pos { color: var(--up); }
+  .neg { color: var(--down); }
+  .loading, .error { padding: 40px; text-align: center; color: var(--muted); font-family: var(--mono); }
+  .error { color: var(--down); }
+
+  .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-family: var(--mono); font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .status-ENTRY_SIGNAL { background: rgba(46,203,112,0.15); color: var(--up); }
+  .status-IN_POSITION { background: rgba(75,158,255,0.15); color: var(--blue); }
+  .status-FILTERED { background: rgba(232,163,61,0.15); color: var(--amber); }
+  .status-WATCHING { background: #1A1F26; color: var(--muted); }
+  .sys-cell { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .sys-cell .detail { margin-top: 2px; }
+
+  .backtest-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .backtest-controls input {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 14px; padding: 8px 12px; border-radius: 6px; width: 140px;
+    text-transform: uppercase;
+  }
+  .backtest-controls button { background: var(--up); color: #05130A; border: none; border-radius: 6px; padding: 8px 18px; font-family: var(--mono); font-weight: 700; font-size: 13px; cursor: pointer; }
+  .backtest-controls button:disabled { background: #2A2F37; color: var(--muted); cursor: not-allowed; }
+
+  .summary-cards { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px; }
+  .summary-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .summary-card .label { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+  .summary-card .value { font-family: var(--mono); font-size: 20px; font-weight: 700; }
+  .system-block { margin-bottom: 26px; }
+  .system-block-title { font-family: var(--mono); font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .reason-tag { font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; background: #1A1F26; color: var(--muted); }
+  .lookback-select, .system-select {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+  tbody tr[data-ticker] { cursor: pointer; }
+  tbody tr[data-ticker]:hover td { background: #1A2029; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; width: min(720px, 92vw); max-height: 85vh; overflow-y: auto; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .modal-header h2 { font-size: 16px; margin: 0; font-weight: 700; }
+  .modal-close { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 14px; }
+  .chart-legend { display: flex; gap: 14px; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+  .chart-legend span.dot { display:inline-block; width:10px; height:2px; margin-right:4px; vertical-align:middle; }
+
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; padding: 0 4px; }
+  .table-scroll table { min-width: 920px; }
+  .checklist-key { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 14px; line-height: 1.6; }
+
+  @media (max-width: 640px) {
+    header { padding: 14px 12px 10px; }
+    header h1 { font-size: 12px; margin-bottom: 10px; }
+    main { padding: 12px; }
+    .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+    .tab { flex-shrink: 0; padding: 8px 14px; font-size: 12px; }
+    .system-strip { padding: 12px; gap: 14px; }
+    .backtest-controls { flex-wrap: wrap; }
+    .backtest-controls input { width: 100%; }
+    .backtest-controls span { width: 100%; order: 3; }
+    .summary-cards { grid-template-columns: repeat(2, 1fr); }
+    .summary-card .value { font-size: 16px; }
+    .modal-box { padding: 14px; width: 96vw; max-height: 90vh; }
+    .chart-legend { font-size: 10px; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="chartModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="chartModalTitle">차트</h2>
+      <button class="modal-close" id="chartModalClose">✕</button>
+    </div>
+    <div id="chartModalBody"><div class="loading">불러오는 중...</div></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-row">
+    <h1>터틀 트레이딩 스크리너 (리처드 데니스) · System1+System2 동시운용</h1>
+    <a href="/paper-trade.html" style="color:#4B9EFF;font-size:13px;text-decoration:none;white-space:nowrap;">📈 실전 가상매매 트래커</a>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-market="kr">코스피 / 코스닥</button>
+    <button class="tab" data-market="us">미국주식 (S&amp;P500)</button>
+    <button class="tab" data-market="backtest">백테스트</button>
+  </div>
+</header>
+
+<div class="system-strip" id="systemStrip"></div>
+
+<main>
+  <div id="backtestControls" class="backtest-controls" style="display:none;">
+    <select id="backtestRegion" class="system-select">
+      <option value="us">미국</option>
+      <option value="kospi">코스피</option>
+      <option value="kosdaq">코스닥</option>
+    </select>
+    <input id="backtestTicker" placeholder="예: PLTR 또는 PLTR,AME" value="PLTR" style="width:200px;" />
+    <button id="backtestRun">백테스트 실행 (System1+2 동시)</button>
+    <span style="font-family: var(--mono); font-size: 11px; color: var(--muted);">쉼표로 구분해 여러 티커 입력하면 비교표 (코스피/코스닥은 종목코드로, 예: 005930)</span>
+  </div>
+  <div class="meta" id="meta">불러오는 중...</div>
+  <div id="content"><div class="loading">데이터 불러오는 중...</div></div>
+  <div class="checklist-key" id="checklistKey">
+    ● 이 스크리너는 <span class="sys-tag S1">S1</span>(20일 진입/10일 청산, 휩쏘 필터 있음)과 <span class="sys-tag S2">S2</span>(55일 진입/20일 청산, 필터 없음)를 <b>동시에</b> 시뮬레이션합니다 - 종목마다 두 시스템의 상태가 각각 표시됩니다<br/>
+    ● 상태: <span class="status-pill status-ENTRY_SIGNAL">진입신호</span> 오늘 채널 상단 돌파(내일 시가 매수 검토) · <span class="status-pill status-IN_POSITION">보유중</span> 이 시스템대로 매매했다면 현재 보유 중(유닛/손절선/피라미딩 표시) · <span class="status-pill status-FILTERED">필터제외</span> S1 휩쏘 필터로 제외 · <span class="status-pill status-WATCHING">관찰중</span> 아직 돌파 전<br/>
+    ● 포지션 사이징: 유닛당 가상자본의 1%를 N(20일 변동성)으로 나눠 수량 산정, 0.5N마다 유닛 추가(최대 4유닛, 하루에 여러 유닛 동시 추가 가능), 손절 = 마지막 유닛 진입가 - 2N<br/>
+    ● N/채널 계산은 2010년부터의 전체 이력을 사용합니다(첫 로딩이 다소 걸릴 수 있음, 이후 30분 캐시). Long-only 구현이며(숏 미포함), S1/S2는 각자 독립적으로 최대 4유닛까지 운용합니다(같은 종목에 둘 다 신호가 나면 최대 8유닛 노출 가능)
+  </div>
+</main>
+
+<script>
+const SYS_LABEL = { S1: 'System 1 (20일/10일)', S2: 'System 2 (55일/20일)' };
+const STATUS_LABEL = { ENTRY_SIGNAL: '진입신호', IN_POSITION: '보유중', FILTERED: '필터제외', WATCHING: '관찰중' };
+const REASON_LABEL = { stop_2n: '2N손절', stop_2n_gap: '2N손절(갭)', donchian_exit: '채널청산', donchian_exit_gap: '채널청산(갭)', max_hold: '기간만료청산', still_open: '보유중(미청산)' };
+
+let currentMarket = 'kr';
+let allStocks = [];
+let currentSort = { key: 'statusRank', dir: 'desc' };
+
+async function load(market) {
+  currentMarket = market;
+  document.getElementById('backtestControls').style.display = market === 'backtest' ? 'flex' : 'none';
+  document.getElementById('checklistKey').style.display = market === 'backtest' ? 'none' : 'block';
+
+  if (market === 'backtest') {
+    document.getElementById('systemStrip').innerHTML = '';
+    document.getElementById('meta').textContent = '';
+    document.getElementById('content').innerHTML = '<div class="loading">종목 티커 입력 후 "백테스트 실행"을 눌러주세요</div>';
+    return;
+  }
+
+  document.getElementById('content').innerHTML = '<div class="loading">데이터 불러오는 중... (2010년부터 전체 이력을 종목마다 조회해서 첫 호출은 1~2분 정도 걸릴 수 있어요. 이후 30분간 캐시됩니다)</div>';
+  try {
+    const res = await fetch(`/api/screen/${market}`);
+    if (!res.ok) {
+      let detail = `상태코드 ${res.status}`;
+      try { const b = await res.json(); if (b.error) detail = b.error; } catch (_) {}
+      throw new Error(detail);
+    }
+    const data = await res.json();
+    renderSystemStrip(data.stocks);
+    allStocks = data.stocks;
+    currentSort = { key: 'statusRank', dir: 'desc' };
+    applyFiltersAndSort();
+    const liquidityNote = data.excludedForLiquidity ? ` · 유동성 미달 ${data.excludedForLiquidity}종목 제외` : '';
+    const fetchFailNote = data.fetchFailures ? ` · 데이터 조회 실패 ${data.fetchFailures}종목(소스 이슈 가능)` : '';
+    document.getElementById('meta').textContent = `업데이트: ${new Date(data.updatedAt).toLocaleString('ko-KR')} · 종목 수: ${data.stocks.length}${liquidityNote}${fetchFailNote}`;
+  } catch (err) {
+    document.getElementById('content').innerHTML = `<div class="error">불러오기 실패: ${err.message}</div>`;
+    document.getElementById('meta').textContent = '';
+  }
+}
+
+function renderSystemStrip(stocks) {
+  const strip = document.getElementById('systemStrip');
+  const countFor = (key) => {
+    const c = { ENTRY_SIGNAL: 0, IN_POSITION: 0, FILTERED: 0, WATCHING: 0 };
+    stocks.forEach(s => { c[s[key].status] = (c[s[key].status] || 0) + 1; });
+    return c;
+  };
+  const c1 = countFor('s1'), c2 = countFor('s2');
+  const grp = (tag, c, showFiltered) => `
+    <div class="grp">
+      <span class="sys-tag ${tag}">${tag}</span>
+      진입신호 <b class="pos">${c.ENTRY_SIGNAL}</b> · 보유중 <b style="color:var(--blue);">${c.IN_POSITION}</b>
+      ${showFiltered ? ` · 필터제외 <b style="color:var(--amber);">${c.FILTERED}</b>` : ''} · 관찰중 <b>${c.WATCHING}</b>
+    </div>`;
+  strip.innerHTML = grp('S1', c1, true) + grp('S2', c2, false);
+}
+
+function getBacktestRegionParams() {
+  const regionSel = document.getElementById('backtestRegion').value;
+  const region = regionSel === 'us' ? 'us' : 'kr';
+  const krMarket = regionSel === 'kosdaq' ? 'KOSDAQ' : 'KOSPI';
+  return { region, krMarket };
+}
+
+async function runBacktest() {
+  const rawInput = document.getElementById('backtestTicker').value.trim();
+  if (!rawInput) return;
+  const { region, krMarket } = getBacktestRegionParams();
+  const tickers = [...new Set(rawInput.split(',').map(t => t.trim()).map(t => region === 'us' ? t.toUpperCase() : t).filter(Boolean))];
+  if (!tickers.length) return;
+
+  const btn = document.getElementById('backtestRun');
+  btn.disabled = true;
+  const marketQS = region === 'kr' ? `?market=${krMarket}` : '';
+
+  if (tickers.length === 1) {
+    document.getElementById('content').innerHTML = '<div class="loading">백테스트 실행 중... (2010년부터 전체 이력 계산이라 조금 걸려요)</div>';
+    try {
+      const res = await fetch(`/api/backtest/${region}/${encodeURIComponent(tickers[0])}${marketQS}`);
+      if (!res.ok) {
+        let detail = `상태코드 ${res.status}`;
+        try { const b = await res.json(); if (b.error) detail = b.error; } catch (_) {}
+        throw new Error(detail);
+      }
+      const data = await res.json();
+      renderBacktest(data);
+      document.getElementById('meta').textContent = `${data.ticker} · ${data.startDate} ~ ${data.endDate} (${data.periodDays}거래일)`;
+    } catch (err) {
+      document.getElementById('content').innerHTML = `<div class="error">백테스트 실패: ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+    return;
+  }
+
+  document.getElementById('content').innerHTML = `<div class="loading">${tickers.length}개 종목 백테스트 비교 실행 중... 시간이 좀 걸려요</div>`;
+  try {
+    const marketQSAmp = region === 'kr' ? `&market=${krMarket}` : '';
+    const res = await fetch(`/api/backtest/${region}/compare/batch?tickers=${encodeURIComponent(tickers.join(','))}${marketQSAmp}`);
+    if (!res.ok) {
+      let detail = `상태코드 ${res.status}`;
+      try { const b = await res.json(); if (b.error) detail = b.error; } catch (_) {}
+      throw new Error(detail);
+    }
+    const data = await res.json();
+    renderBacktestCompare(data);
+    document.getElementById('meta').textContent = `${tickers.length}개 종목 비교 (합산 통계 기준)`;
+  } catch (err) {
+    document.getElementById('content').innerHTML = `<div class="error">비교 백테스트 실패: ${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderBacktestCompare(data) {
+  const rows = data.results.map(r => {
+    if (!r.ok) return `<tr><td class="name">${r.ticker}</td><td colspan="7" class="error" style="text-align:left;">${r.error}</td></tr>`;
+    const s = r.summary;
+    if (!r.trades || !r.trades.length) return `<tr><td class="name">${r.ticker}</td><td colspan="7" style="color:var(--muted);">${s.message || '거래 없음'}</td></tr>`;
+    const s1 = r.bySystem.S1.summary, s2 = r.bySystem.S2.summary;
+    return `
+      <tr>
+        <td class="name">${r.ticker}</td>
+        <td>${s.totalTrades}회</td>
+        <td>${s1.totalTrades || 0}회 / ${s2.totalTrades || 0}회</td>
+        <td>${s.winRate}%</td>
+        <td class="${s.compoundedReturnPct >= 0 ? 'pos' : 'neg'}">${s.compoundedReturnPct >= 0 ? '+' : ''}${s.compoundedReturnPct}%</td>
+        <td class="neg">${s.maxDrawdownPct}%</td>
+      </tr>`;
+  }).join('');
+  document.getElementById('content').innerHTML = `
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>종목</th><th>총거래</th><th>S1/S2 거래수</th><th>승률</th><th>합산 복리수익률</th><th>MDD</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div style="font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:10px;">
+      합산 수치는 S1/S2를 하나의 자본으로 합쳤다고 가정한 참고용입니다(실제로는 각자 독립 가상자본). 상세 내역을 보려면 티커 하나만 입력해서 다시 실행하세요.
+    </div>`;
+}
+
+function summaryCards(s, showUnits) {
+  const cards = [
+    ['총 거래', s.totalTrades + '회'],
+    ['승률', s.winRate + '%'],
+    ['평균 수익(승)', '+' + s.avgWinPct + '%'],
+    ['평균 손실(패)', s.avgLossPct + '%'],
+    ['손익비', s.profitFactor ?? '-'],
+  ];
+  if (showUnits) cards.push(['평균 사용유닛', s.avgUnitsUsed + '개']);
+  cards.push(['복리수익률', (s.compoundedReturnPct >= 0 ? '+' : '') + s.compoundedReturnPct + '%']);
+  cards.push(['MDD', s.maxDrawdownPct + '%']);
+  return cards.map(([label, value]) => `
+    <div class="summary-card">
+      <div class="label">${label}</div>
+      <div class="value ${typeof value === 'string' && value.startsWith('+') ? 'pos' : (typeof value === 'string' && value.startsWith('-') ? 'neg' : '')}">${value}</div>
+    </div>`).join('');
+}
+
+function tradeRows(trades) {
+  return trades.map(t => `
+    <tr>
+      <td><span class="sys-tag ${t.system}">${t.system}</span></td>
+      <td>${t.entryDate}</td>
+      <td>${t.avgEntryPrice.toLocaleString()}</td>
+      <td>${t.unitsUsed}유닛</td>
+      <td>${t.exitDate}</td>
+      <td>${t.exitPrice.toLocaleString()}</td>
+      <td class="${t.returnPct >= 0 ? 'pos' : 'neg'}">${t.returnPct >= 0 ? '+' : ''}${t.returnPct}%</td>
+      <td>${t.holdDays}일</td>
+      <td><span class="reason-tag">${REASON_LABEL[t.reason] || t.reason}</span></td>
+    </tr>`).join('');
+}
+
+function liveStatusNote(sysKey, ls) {
+  if (!ls) return '';
+  if (ls.inPosition) {
+    return `현재 상태: 보유중(${ls.units}/${ls.maxUnits}유닛) · 평단 ${ls.avgEntryPrice.toLocaleString()} · 손절 ${ls.stopPrice.toLocaleString()} · 평가손익 ${ls.unrealizedPct >= 0 ? '+' : ''}${ls.unrealizedPct}%`;
+  }
+  if (ls.signalNow) return '현재 상태: 진입신호 발생';
+  if (ls.filteredByWhipsaw) return '현재 상태: 돌파했으나 휩쏘 필터로 제외';
+  return `현재 상태: 관찰중(채널 상단 ${ls.breakoutLevel ? ls.breakoutLevel.toLocaleString() : '-'})`;
+}
+
+function renderBacktest(data) {
+  if (!data.trades.length) {
+    document.getElementById('content').innerHTML = `<div class="error">조건을 만족하는 거래가 없었습니다.</div>`;
+    return;
+  }
+  const s1 = data.bySystem.S1, s2 = data.bySystem.S2;
+
+  const block = (sysKey, sys) => {
+    const s = sys.summary;
+    if (!sys.trades.length) {
+      return `<div class="system-block">
+        <div class="system-block-title"><span class="sys-tag ${sysKey}">${sysKey}</span> ${SYS_LABEL[sysKey]}</div>
+        <div style="font-family:var(--mono); font-size:12px; color:var(--muted);">${s.message || '거래 없음'}</div>
+      </div>`;
+    }
+    return `<div class="system-block">
+      <div class="system-block-title"><span class="sys-tag ${sysKey}">${sysKey}</span> ${SYS_LABEL[sysKey]}</div>
+      <div style="font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:8px;">${liveStatusNote(sysKey, data.liveStatus[sysKey])}</div>
+      <div class="summary-cards">${summaryCards(s, true)}</div>
+      <div style="font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:10px;">
+        거래비용 반영 전 복리수익률: ${s.grossCompoundedReturnPct}% (거래비용으로 -${s.tradingCostDragPct}%p 차감) ·
+        청산 사유: ${Object.entries(s.exitReasonCounts).map(([k,v]) => `${REASON_LABEL[k]||k} ${v}회`).join(' · ')}
+      </div>
+    </div>`;
+  };
+
+  const timelineRows = tradeRows(data.trades);
+
+  document.getElementById('content').innerHTML = `
+    ${block('S1', s1)}
+    ${block('S2', s2)}
+    <div style="font-family:var(--mono); font-size:13px; font-weight:700; margin: 20px 0 10px;">전체 거래 타임라인 (S1+S2 합산, 날짜순)</div>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>시스템</th><th>진입일</th><th>평단</th><th>유닛</th><th>청산일</th><th>청산가</th><th>수익률(순)</th><th>보유기간</th><th>청산사유</th></tr></thead>
+      <tbody>${timelineRows}</tbody>
+    </table>
+    </div>`;
+}
+
+function applyFiltersAndSort() {
+  const { key, dir } = currentSort;
+  const sorted = [...allStocks].sort((a, b) => {
+    let va = a[key], vb = b[key];
+    const aMissing = va === null || va === undefined;
+    const bMissing = vb === null || vb === undefined;
+    if (aMissing && bMissing) return 0;
+    if (aMissing) return 1;
+    if (bMissing) return -1;
+    if (typeof va === 'string') return dir === 'desc' ? vb.localeCompare(va, 'ko') : va.localeCompare(vb, 'ko');
+    return dir === 'desc' ? vb - va : va - vb;
+  });
+  renderTable(sorted, currentMarket);
+}
+
+function wireSortableHeaders() {
+  document.querySelectorAll('#screenerHeaderRow th[data-key]').forEach(th => {
+    th.style.cursor = 'pointer';
+    const key = th.dataset.key;
+    if (currentSort.key === key) th.textContent += currentSort.dir === 'desc' ? ' ▼' : ' ▲';
+    th.addEventListener('click', () => {
+      if (currentSort.key === key) currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
+      else currentSort = { key, dir: (key === 'name' || key === 'sector') ? 'asc' : 'desc' };
+      applyFiltersAndSort();
+    });
+  });
+}
+
+function sysCell(sys) {
+  let detail;
+  if (sys.status === 'IN_POSITION') {
+    detail = `${sys.units}/${sys.maxUnits}유닛 · 평단 ${sys.avgEntryPrice.toLocaleString()} · 손절 ${sys.stopPrice.toLocaleString()}${sys.nextAddPrice ? ` · 다음유닛 ${sys.nextAddPrice.toLocaleString()}` : ' · 만석'}`;
+  } else {
+    const dist = sys.distanceToBreakout !== null ? (sys.distanceToBreakout * 100).toFixed(1) + '%' : '-';
+    detail = `채널상단 ${sys.breakoutLevel ? sys.breakoutLevel.toLocaleString() : '-'} · 대비 ${dist}`;
+  }
+  const pnl = sys.unrealizedPct !== undefined && sys.unrealizedPct !== null
+    ? ` · <span class="${sys.unrealizedPct >= 0 ? 'pos' : 'neg'}">${sys.unrealizedPct >= 0 ? '+' : ''}${sys.unrealizedPct}%</span>` : '';
+  return `<div class="sys-cell"><span class="status-pill status-${sys.status}">${STATUS_LABEL[sys.status]}</span><div class="detail">${detail}${pnl}</div></div>`;
+}
+
+function renderTable(stocks, market) {
+  if (!stocks.length) {
+    document.getElementById('content').innerHTML = '<div class="error">조건에 맞는 데이터가 없습니다. (크롤링 결과 확인 필요)</div>';
+    return;
+  }
+  const rows = stocks.map(s => `
+    <tr data-ticker="${s.ticker}" data-market="${market}" data-name="${s.name}">
+      <td class="name">${s.name} <span style="color:var(--muted)">${s.ticker}</span></td>
+      <td style="color:var(--muted); font-size:12px;">${s.sector || '-'}</td>
+      <td>${s.lastClose?.toLocaleString() ?? '-'}</td>
+      <td>${sysCell(s.s1)}</td>
+      <td>${sysCell(s.s2)}</td>
+    </tr>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr id="screenerHeaderRow">
+          <th data-key="name">종목</th><th data-key="sector">섹터</th><th data-key="lastClose">현재가</th>
+          <th><span class="sys-tag S1">S1</span> 20일/10일</th><th><span class="sys-tag S2">S2</span> 55일/20일</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+  wireSortableHeaders();
+}
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    load(btn.dataset.market);
+  });
+});
+
+document.getElementById('backtestRun').addEventListener('click', runBacktest);
+document.getElementById('backtestTicker').addEventListener('keydown', (e) => { if (e.key === 'Enter') runBacktest(); });
+document.getElementById('backtestRegion').addEventListener('change', (e) => {
+  document.getElementById('backtestTicker').value = e.target.value === 'us' ? 'PLTR' : '005930';
+});
+
+document.getElementById('content').addEventListener('click', (e) => {
+  const row = e.target.closest('tr[data-ticker]');
+  if (!row) return;
+  openChartModal(row.dataset.ticker, row.dataset.market, row.dataset.name);
+});
+
+document.getElementById('chartModalClose').addEventListener('click', closeChartModal);
+document.getElementById('chartModal').addEventListener('click', (e) => { if (e.target.id === 'chartModal') closeChartModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeChartModal(); });
+
+function openChartModal(ticker, market, name) {
+  document.getElementById('chartModalTitle').textContent = `${name} (${ticker})`;
+  document.getElementById('chartModalBody').innerHTML = '<div class="loading">차트 불러오는 중...</div>';
+  document.getElementById('chartModal').classList.add('open');
+  loadChart(ticker, market);
+}
+function closeChartModal() { document.getElementById('chartModal').classList.remove('open'); }
+
+async function loadChart(ticker, market) {
+  try {
+    const res = await fetch(`/api/chart/${market}/${encodeURIComponent(ticker)}`);
+    if (!res.ok) {
+      let detail = `상태코드 ${res.status}`;
+      try { const b = await res.json(); if (b.error) detail = b.error; } catch (_) {}
+      throw new Error(detail);
+    }
+    renderChart(await res.json());
+  } catch (err) {
+    document.getElementById('chartModalBody').innerHTML = `<div class="error">차트 불러오기 실패: ${err.message}</div>`;
+  }
+}
+
+function renderChart(data) {
+  const { dates, closes, volumes, levels } = data;
+  if (!closes || !closes.length) {
+    document.getElementById('chartModalBody').innerHTML = '<div class="error">차트 데이터가 없습니다.</div>';
+    return;
+  }
+  const W = 660, H = 320, padL = 55, padR = 15, padT = 15, padB = 20;
+  const volH = 60, volGap = 10;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  const levelVals = Object.values(levels).flatMap(l => [l.entryLevel, l.exitLevel, l.stopLevel]).filter(v => v !== null && v !== undefined);
+  const allVals = closes.concat(levelVals);
+  const minV = Math.min(...allVals) * 0.98;
+  const maxV = Math.max(...allVals) * 1.02;
+  const xStep = plotW / (closes.length - 1 || 1);
+  const yScale = (v) => padT + plotH - ((v - minV) / (maxV - minV || 1)) * plotH;
+  const xScale = (i) => padL + i * xStep;
+
+  const linePoints = closes.map((c, i) => `${xScale(i).toFixed(1)},${yScale(c).toFixed(1)}`).join(' ');
+  const maxVol = Math.max(...volumes, 1);
+  const volBarW = Math.max(plotW / volumes.length - 1, 0.5);
+  const volBars = volumes.map((v, i) => {
+    const barH = (v / maxVol) * volH;
+    const x = xScale(i) - volBarW / 2;
+    const y = padT + plotH + volGap + (volH - barH);
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${volBarW.toFixed(1)}" height="${barH.toFixed(1)}" fill="#2A2F37" />`;
+  }).join('');
+
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(t => {
+    const v = minV + (maxV - minV) * t;
+    const y = yScale(v);
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#1A1F26" stroke-width="1" />
+            <text x="${padL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#7A8290" font-family="monospace">${Math.round(v).toLocaleString()}</text>`;
+  }).join('');
+
+  const refLine = (level, color, label, yOffset) => {
+    if (!level) return '';
+    const y = yScale(level);
+    if (y < padT || y > padT + plotH) return '';
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="${color}" stroke-width="1" stroke-dasharray="4,3" />
+            <text x="${W - padR}" y="${(y + yOffset).toFixed(1)}" text-anchor="end" font-size="9" fill="${color}" font-family="monospace">${label}</text>`;
+  };
+
+  const xLabels = [0, Math.floor(closes.length / 2), closes.length - 1].map(i => {
+    if (!dates[i]) return '';
+    return `<text x="${xScale(i).toFixed(1)}" y="${(padT + plotH + volGap + volH + 12).toFixed(1)}" text-anchor="middle" font-size="9" fill="#7A8290" font-family="monospace">${dates[i]}</text>`;
+  }).join('');
+
+  const svg = `
+    <svg viewBox="0 0 ${W} ${padT + plotH + volGap + volH + 20}" width="100%" style="background:var(--bg); border-radius:8px;">
+      ${gridLines}
+      ${volBars}
+      ${refLine(levels.S1.entryLevel, 'var(--amber)', 'S1 진입', -3)}
+      ${refLine(levels.S1.exitLevel, '#C98A3A', 'S1 청산', 10)}
+      ${refLine(levels.S2.entryLevel, 'var(--blue)', 'S2 진입', -3)}
+      ${refLine(levels.S2.exitLevel, 'var(--purple)', 'S2 청산', 10)}
+      ${refLine(levels.S1.stopLevel, 'var(--down)', 'S1 손절', -3)}
+      ${refLine(levels.S2.stopLevel, 'var(--down)', 'S2 손절', 10)}
+      <polyline points="${linePoints}" fill="none" stroke="var(--up)" stroke-width="1.5" />
+      ${xLabels}
+    </svg>`;
+
+  document.getElementById('chartModalBody').innerHTML = `
+    ${svg}
+    <div class="chart-legend">
+      <span><span class="dot" style="background:var(--up);"></span>종가</span>
+      <span><span class="dot" style="background:var(--amber);"></span>S1 진입 ${levels.S1.entryLevel ? levels.S1.entryLevel.toLocaleString() : '-'}</span>
+      <span><span class="dot" style="background:#C98A3A;"></span>S1 청산 ${levels.S1.exitLevel ? levels.S1.exitLevel.toLocaleString() : '-'}</span>
+      <span><span class="dot" style="background:var(--blue);"></span>S2 진입 ${levels.S2.entryLevel ? levels.S2.entryLevel.toLocaleString() : '-'}</span>
+      <span><span class="dot" style="background:var(--purple);"></span>S2 청산 ${levels.S2.exitLevel ? levels.S2.exitLevel.toLocaleString() : '-'}</span>
+      ${levels.S1.stopLevel || levels.S2.stopLevel ? `<span><span class="dot" style="background:var(--down);"></span>2N손절</span>` : ''}
+      <span style="color:#2A2F37;">■ 거래량</span>
+    </div>
+    <div style="font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:6px;">최근 ${closes.length}봉만 표시(전체 이력은 2010년부터지만 차트는 최근 구간만)</div>`;
+}
+
+load('kr');
+</script>
+
+</body>
+</html>
