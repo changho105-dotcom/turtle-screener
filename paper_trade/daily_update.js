@@ -31,12 +31,27 @@ const KRW_CAPITAL = 50_000_000;
 const USD_CAPITAL_KRW_EQUIV = 50_000_000;
 const RECENT_DAYS_BACK = 220; // 달력일 - N(20일)+최대채널(55일) 계산에 충분한 최근 구간만 사용
 
+// ⚠️ 국내(KR)는 2025-11~2026년 상반기 코스피 버블+폭락 구간을 제외하기 위해 krSource.js에서
+// 조회 종료일을 2025-10-31로 고정해놨습니다(사용자 지시, 2026-08-07). 이 스크립트가 "오늘"
+// 기준으로 recentSince()를 계산하면 국내는 since(오늘-220일) > until(2025-10-31)이 되어 조회
+// 자체가 깨지므로, 국내는 이 고정 종료일 기준으로 최근 구간을 계산합니다. 즉 국내 포지션 관리/
+// 신규진입 스캔은 실질적으로 "2025-10-31 시점"에 멈춰 있는 상태입니다 - 매일 실행해도 같은
+// 데이터를 다시 보게 되므로, 이 컷오프가 유지되는 동안은 국내 신규 진입은 하지 않습니다
+// (아래 main()의 KR 섹션 참고). 커트오프를 풀거나 조정하려면 krSource.js의 HISTORY_END_KR 수정.
+const KR_FROZEN_UNTIL = krSource.HISTORY_END_KR;
+
 function today() { return new Date().toISOString().slice(0, 10); }
 function round(v, digits = 2) { const m = Math.pow(10, digits); return Math.round(v * m) / m; }
-function recentSince() {
-  const d = new Date();
-  d.setDate(d.getDate() - RECENT_DAYS_BACK);
+function addDays(dateStr, delta) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + delta);
   return d.toISOString().slice(0, 10);
+}
+function recentSince() { // US용 - 실제 오늘 기준
+  return addDays(today(), -RECENT_DAYS_BACK);
+}
+function recentSinceKR() { // KR용 - 고정된 KR_FROZEN_UNTIL 기준
+  return addDays(KR_FROZEN_UNTIL, -RECENT_DAYS_BACK);
 }
 
 function loadState() {
@@ -64,11 +79,11 @@ async function fetchFx() {
  * source: krSource | usSource, sizingCapital: 유닛 사이징 기준 고정자본(KRW_CAPITAL 또는 startCapitalUsd)
  * portfolio.cash(KR) 또는 portfolio.cashUsd(US)를 직접 mutate합니다.
  */
-async function managePositions(portfolio, cashField, source, sizingCapital) {
+async function managePositions(portfolio, cashField, source, sizingCapital, sinceDate) {
   const exits = [];
   const stillHeld = [];
   for (const pos of portfolio.positions) {
-    const o = await source.fetchOHLCV(pos.ticker, recentSince());
+    const o = await source.fetchOHLCV(pos.ticker, sinceDate);
     if (o.closes.length < CONFIG.nPeriod + 1) { stillHeld.push(pos); continue; } // 데이터 부족하면 보유 유지(안전)
 
     const sysCfg = CONFIG.systems[pos.system];
@@ -119,9 +134,9 @@ async function managePositions(portfolio, cashField, source, sizingCapital) {
  * 신규 진입 후보 스캔(공용). universe: [{ticker,name,market,sector?}], source: krSource|usSource, market: 'KR'|'US'
  * held: Set('ticker_system') - 이미 보유 중이라 제외할 슬롯
  */
-async function scanCandidates(universe, source, market, held) {
+async function scanCandidates(universe, source, market, held, sinceDate) {
   const withOhlcv = await runBatched(universe, async (s) => {
-    const o = await source.fetchOHLCV(s.ticker, recentSince());
+    const o = await source.fetchOHLCV(s.ticker, sinceDate);
     const minNeed = Math.max(CONFIG.systems.S2.entryLookback, CONFIG.nPeriod) + 1;
     if (o.closes.length < minNeed) return null;
     if (!passesLiquidity(o.closes, o.volumes, market)) return null;
@@ -185,32 +200,16 @@ async function main() {
   }
 
   // ---- KR 보유 관리 ----
-  const krExits = await managePositions(state.kr, 'cash', krSource, KRW_CAPITAL);
-  for (const e of krExits) {
-    state.kr.trades.push(e);
-    appendLog(`- [KR 매도] ${e.ticker} ${e.name || ''} (${e.system}) - 청산 @ ${e.exitPrice.toLocaleString()} x ${e.shares}주, 손익 ${Math.round(e.pnl).toLocaleString()}원`);
-  }
-  for (const pos of state.kr.positions) {
-    if (pos._addedToday) appendLog(`- [KR 유닛추가] ${pos.ticker} ${pos.name || ''} (${pos.system}) - ${pos._addedToday}유닛 추가, 현재 ${pos.units.length}/${CONFIG.maxUnits}유닛`);
-    delete pos._addedToday;
-  }
-
-  const krHeld = new Set(state.kr.positions.map(p => `${p.ticker}_${p.system}`));
-  const krOpenSlots = MAX_POSITIONS - state.kr.positions.length;
-  if (krOpenSlots > 0) {
-    const [kospiList, kosdaqList] = await Promise.all([krSource.fetchStockList(0, 4), krSource.fetchStockList(1, 4)]);
-    const candidates = await scanCandidates([...kospiList, ...kosdaqList], krSource, 'KR', krHeld);
-    const entries = enterPositions(state.kr, 'cash', candidates, krOpenSlots, KRW_CAPITAL);
-    for (const en of entries) {
-      appendLog(`- [KR 매수] ${en.ticker} ${en.name || ''} (${en.market}, ${en.system}) @ ${en.lastClose.toLocaleString()} x ${en.shares}주 = ${Math.round(en.cost).toLocaleString()}원 (채널대비 +${(en.strength * 100).toFixed(1)}%)`);
-    }
-    if (entries.length === 0) appendLog(`- [KR] 빈 슬롯 ${krOpenSlots}개, 조건 통과 신규 후보 없음`);
-  } else {
-    appendLog(`- [KR] ${MAX_POSITIONS}슬롯 전부 보유 중, 신규 스캔 생략`);
-  }
+  // ⚠️ 국내는 2025-11~2026년 상반기 코스피 버블+폭락 구간을 제외하기 위해 데이터가
+  // 2025-10-31로 고정됨(krSource.js HISTORY_END_KR, 사용자 지시 2026-08-07). 이 상태에서는
+  // "오늘" 기준 실시간 관리/신규진입이 성립하지 않으므로(과거 고정 데이터를 매일 다시 보는 셈)
+  // 국내 포트폴리오는 이 컷오프가 풀릴 때까지 완전히 동결합니다 - 손절/유닛추가/신규진입 전부 생략.
+  // 2026-08-07 Day1에 이미 진입된 6개 슬롯(라이브 데이터 기준)은 그대로 유지되며, 이 건은
+  // 컷오프 정책 확정 전에 진입된 것이라 별도로 사용자 확인이 필요합니다.
+  appendLog(`- [KR] 2025-10-31 데이터 컷오프로 동결 중 - 관리/신규진입 생략 (보유 ${state.kr.positions.length}슬롯 그대로 유지)`);
 
   // ---- US 보유 관리 ----
-  const usExits = await managePositions(state.us, 'cashUsd', usSource, state.us.startCapitalUsd);
+  const usExits = await managePositions(state.us, 'cashUsd', usSource, state.us.startCapitalUsd, recentSince());
   for (const e of usExits) {
     state.us.trades.push(e);
     appendLog(`- [US 매도] ${e.ticker} (${e.system}) - 청산 @ $${e.exitPrice} x ${e.shares}주, 손익 $${e.pnl.toFixed(2)}`);
@@ -224,7 +223,7 @@ async function main() {
   const usOpenSlots = MAX_POSITIONS - state.us.positions.length;
   if (usOpenSlots > 0) {
     const stockList = await usSource.fetchStockList();
-    const candidates = await scanCandidates(stockList, usSource, 'US', usHeld);
+    const candidates = await scanCandidates(stockList, usSource, 'US', usHeld, recentSince());
     const entries = enterPositions(state.us, 'cashUsd', candidates, usOpenSlots, state.us.startCapitalUsd);
     for (const en of entries) {
       appendLog(`- [US 매수] ${en.ticker} (${en.system}) @ $${en.lastClose} x ${en.shares}주 = $${en.cost.toFixed(2)} (채널대비 +${(en.strength * 100).toFixed(1)}%)`);

@@ -133,6 +133,9 @@
   </div>
 </header>
 
+<div id="krFrozenBanner" style="display:none; background:rgba(240,85,79,0.12); border-bottom:1px solid var(--down); color:var(--down); font-family:var(--mono); font-size:12px; padding:10px 24px;">
+  ⚠️ 국내(KR) 데이터는 2025-11~2026년 상반기 코스피 버블+폭락 구간을 제외하기 위해 <b>2025-10-31까지로 고정</b>되어 있습니다. 실시간 현재가·신호가 아니라 그 시점 기준 데이터입니다. 페이퍼 트레이더의 국내 포지션도 이 컷오프 동안 동결됩니다.
+</div>
 <div class="system-strip" id="systemStrip"></div>
 
 <main>
@@ -169,6 +172,7 @@ async function load(market) {
   currentMarket = market;
   document.getElementById('backtestControls').style.display = market === 'backtest' ? 'flex' : 'none';
   document.getElementById('checklistKey').style.display = market === 'backtest' ? 'none' : 'block';
+  document.getElementById('krFrozenBanner').style.display = market === 'kr' ? 'block' : 'none';
 
   if (market === 'backtest') {
     document.getElementById('systemStrip').innerHTML = '';
