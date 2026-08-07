@@ -239,10 +239,9 @@ function renderDashboardHtml({ state, todayLines, recentLogTail, scan, usLastPri
       ${state.kr.positions.length === 0 ? '<div class="frozen-banner">⚠️ 국내 데이터가 2025-10-31로 고정되어 있습니다(코스피 버블·폭락 구간 제외 목적). 이 컷오프가 풀릴 때까지 관리·신규진입을 전부 생략합니다.</div>' : ''}
       <div class="stat-line"><span>현금</span><b>${fmtKrw(state.kr.cash)}</b></div>
       <div class="stat-line"><span>실현손익</span><b>${fmtKrw(state.kr.realizedPnl)}</b></div>
-      <!-- lastPrices로 null을 넘겨서 지금은 항상 평단 대비 0%로 표시됨 - KR은 현재 0포지션이라
-           문제 없지만, 컷오프가 풀려 KR 포지션이 다시 생기면 daily_update.js가 US처럼
-           krLastPrices Map을 만들어서 넘겨줘야 실제 평가손익이 보임. -->
-      ${renderPositions(state.kr.positions, false, null)}
+      ${renderPositions(state.kr.positions, false, null) /* lastPrices=null → 항상 평단대비 0%.
+        KR은 현재 0포지션이라 문제 없음. 컷오프 풀려 KR 포지션이 다시 생기면 daily_update.js가
+        US처럼 krLastPrices Map을 만들어 넘겨줘야 실제 평가손익이 보임(JS 주석 - HTML엔 안 남음). */}
     </div>
     <div class="panel">
       <div class="panel-head"><h3>🇺🇸 달러 포트폴리오</h3><span class="slots">${state.us.positions.length} / 10 슬롯</span></div>
