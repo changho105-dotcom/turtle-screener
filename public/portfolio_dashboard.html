@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>터틀 트레이딩 · 데스크 리포트</title>
+<style>
+  :root {
+    --bg: #0b0e11; --panel: #12161c; --panel-2: #171c24; --border: #232a33;
+    --ink: #e6e8eb; --mute: #7a8290; --faint: #4d5561;
+    --up: #2ecb70; --down: #f0554f; --s1: #e8a33d; --s2: #4b9eff;
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", "Noto Serif KR", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(1200px 500px at 15% -10%, rgba(75,158,255,0.06), transparent 60%),
+                radial-gradient(1000px 480px at 100% 0%, rgba(232,163,61,0.05), transparent 55%), var(--bg);
+    color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; padding: 40px 20px 64px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  .masthead { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap;
+    padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .masthead .brand { font-family: var(--serif); font-weight: 700; font-size: clamp(28px, 5vw, 40px);
+    letter-spacing: 0.01em; text-wrap: balance; line-height: 1.05; }
+  .masthead .brand em { font-style: normal; color: var(--up); }
+  .masthead .tagline { font-family: var(--mono); font-size: 11px; color: var(--mute); letter-spacing: 0.06em;
+    text-transform: uppercase; margin-top: 6px; }
+  .masthead .meta { text-align: right; font-family: var(--mono); font-size: 11.5px; color: var(--mute); line-height: 1.7; }
+  .masthead .meta a { color: var(--s2); text-decoration: none; }
+  .rail { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 28px; }
+  @media (max-width: 640px) { .rail { grid-template-columns: repeat(2, 1fr); } }
+  .chip { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .chip .k { font-family: var(--mono); font-size: 10px; color: var(--mute); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .chip .v { font-family: var(--mono); font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip .v.frozen { color: var(--down); font-size: 15px; }
+  .chip .sub { font-family: var(--mono); font-size: 10.5px; color: var(--faint); margin-top: 4px; }
+  h2 { font-family: var(--serif); font-size: 19px; font-weight: 700; margin: 0 0 14px; text-wrap: balance; }
+  .section { margin-bottom: 30px; }
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .panels, .scan { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px;
+    display: flex; flex-direction: column; gap: 14px; }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .panel-head h3 { font-family: var(--sans); font-size: 14.5px; font-weight: 700; margin: 0; }
+  .panel-head .slots { font-family: var(--mono); font-size: 12px; color: var(--mute); font-variant-numeric: tabular-nums; }
+  .frozen-banner { background: rgba(240,85,79,0.08); border: 1px solid rgba(240,85,79,0.35); border-radius: 8px;
+    padding: 10px 12px; font-family: var(--sans); font-size: 12.5px; color: var(--down); line-height: 1.5; }
+  .stat-line { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12.5px; color: var(--mute); }
+  .stat-line b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .empty-state { font-family: var(--sans); font-size: 12.5px; color: var(--faint); padding: 6px 0 2px; }
+  .position { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; }
+  .position + .position { margin-top: 8px; }
+  .position .top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .position .ticker { font-family: var(--mono); font-weight: 700; font-size: 13px; }
+  .position .name { font-family: var(--sans); font-size: 11.5px; color: var(--mute); flex: 1; }
+  .position .pnl { font-family: var(--mono); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .position .pnl.pos { color: var(--up); } .position .pnl.neg { color: var(--down); } .position .pnl.flat { color: var(--mute); }
+  .tag { font-family: var(--mono); font-weight: 700; font-size: 9.5px; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.02em; }
+  .tag.s1 { background: rgba(232,163,61,0.16); color: var(--s1); }
+  .tag.s2 { background: rgba(75,158,255,0.16); color: var(--s2); }
+  .position .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-family: var(--mono); font-size: 11px; }
+  .position .grid div span { display: block; color: var(--faint); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .position .grid div b { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .scan { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .scan-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .scan-card .head { margin-bottom: 12px; }
+  .scan-card .head h3 { font-size: 13.5px; margin: 0; font-family: var(--sans); font-weight: 700; }
+  .scan-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .scan-row:last-child { border-bottom: none; }
+  .scan-row .tag { flex-shrink: 0; width: 22px; text-align: center; }
+  .bar-track { flex: 1; height: 6px; border-radius: 4px; background: #1a1f26; overflow: hidden; display: flex; }
+  .bar-seg { height: 100%; }
+  .scan-row .count { font-family: var(--mono); font-size: 11px; color: var(--mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .legend { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-top: 10px; line-height: 1.6; }
+  .log { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; overflow-x: auto; }
+  .log-line { font-family: var(--mono); font-size: 11.5px; color: var(--mute); line-height: 1.7; white-space: pre-wrap; }
+  .log-tail { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .log-tail summary { font-family: var(--mono); font-size: 11px; color: var(--faint); cursor: pointer; }
+  footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--border); font-family: var(--mono);
+    font-size: 10.5px; color: var(--faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer a { color: var(--mute); }
+  a:focus-visible { outline: 2px solid var(--s2); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <div class="brand">TURTLE<em>·</em>DESK</div>
+      <div class="tagline">System 1 · System 2 — 가상매매 데스크 리포트</div>
+    </div>
+    <div class="meta">
+      생성: 2026. 8. 7. 12시 49분 51초 KST · Day 3<br/>
+      라이브 앱: <a href="https://turtle-screener-production-8299.up.railway.app" target="_blank" rel="noopener">turtle-screener-production-8299.up.railway.app</a>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="chip"><div class="k">시작일 · 경과</div><div class="v">2026-08-07</div><div class="sub">Day 3</div></div>
+    <div class="chip">
+      <div class="k">한화 포트폴리오</div>
+      <div class="v frozen">데이터 동결</div><div class="sub">2025-10-31 컷오프 · 0/10 슬롯</div>
+    </div>
+    <div class="chip"><div class="k">달러 포트폴리오</div><div class="v">$35,209.29</div>
+      <div class="sub">현금 $5,756.92 + 보유원가 $29,452.36</div></div>
+    <div class="chip"><div class="k">실현손익 (KR / US)</div>
+      <div class="v" style="font-size:16px;">
+        <span style="color:var(--up);">0원</span>
+        <span style="color:var(--faint); font-size:13px;"> / </span>
+        <span style="color:var(--up);">$0.00</span>
+      </div><div class="sub">통화가 달라 합산하지 않음</div></div>
+  </div>
+
+  <div class="section panels">
+    <div class="panel">
+      <div class="panel-head"><h3>🇰🇷 한화 포트폴리오</h3><span class="slots">0 / 10 슬롯</span></div>
+      <div class="frozen-banner">⚠️ 국내 데이터가 2025-10-31로 고정되어 있습니다(코스피 버블·폭락 구간 제외 목적). 이 컷오프가 풀릴 때까지 관리·신규진입을 전부 생략합니다.</div>
+      <div class="stat-line"><span>현금</span><b>50,000,000원</b></div>
+      <div class="stat-line"><span>실현손익</span><b>0원</b></div>
+      <!-- lastPrices로 null을 넘겨서 지금은 항상 평단 대비 0%로 표시됨 - KR은 현재 0포지션이라
+           문제 없지만, 컷오프가 풀려 KR 포지션이 다시 생기면 daily_update.js가 US처럼
+           krLastPrices Map을 만들어서 넘겨줘야 실제 평가손익이 보임. -->
+      <div class="empty-state">보유 종목 없음</div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>🇺🇸 달러 포트폴리오</h3><span class="slots">3 / 10 슬롯</span></div>
+      <div class="stat-line"><span>현금</span><b>$5,756.92</b></div>
+      <div class="stat-line"><span>실현손익</span><b>$0.00</b></div>
+      <div class="stat-line"><span>시작환율</span><b>₩1420.08 / $1</b></div>
+      
+      <div class="position">
+        <div class="top">
+          <span class="tag s1">S1</span>
+          <span class="ticker">INSM</span>
+          <span class="name">Insmed Incorporated</span>
+          <span class="pnl flat">+0.0%</span>
+        </div>
+        <div class="grid">
+          <div><span>진입일</span><b>2026-08-07</b></div>
+          <div><span>평단</span><b>$132.55</b></div>
+          <div><span>유닛</span><b>1/4</b></div>
+          <div><span>손절선</span><b style="color:var(--down);">$120.78</b></div>
+        </div>
+      </div>
+      <div class="position">
+        <div class="top">
+          <span class="tag s2">S2</span>
+          <span class="ticker">INSM</span>
+          <span class="name">Insmed Incorporated</span>
+          <span class="pnl flat">+0.0%</span>
+        </div>
+        <div class="grid">
+          <div><span>진입일</span><b>2026-08-07</b></div>
+          <div><span>평단</span><b>$132.55</b></div>
+          <div><span>유닛</span><b>1/4</b></div>
+          <div><span>손절선</span><b style="color:var(--down);">$120.78</b></div>
+        </div>
+      </div>
+      <div class="position">
+        <div class="top">
+          <span class="tag s1">S1</span>
+          <span class="ticker">BDX</span>
+          <span class="name">Becton Dickinson</span>
+          <span class="pnl flat">+0.0%</span>
+        </div>
+        <div class="grid">
+          <div><span>진입일</span><b>2026-08-07</b></div>
+          <div><span>평단</span><b>$177.07</b></div>
+          <div><span>유닛</span><b>1/4</b></div>
+          <div><span>손절선</span><b style="color:var(--down);">$168.12</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>오늘의 시장 스캔</h2>
+    <div class="scan">
+      
+    <div class="scan-card">
+      <div class="head"><h3>🇺🇸 미국 (248종목)</h3></div>
+      
+      <div class="scan-row">
+        <span class="tag s1">S1</span>
+        <div class="bar-track">
+          <div class="bar-seg" style="width:0.00%; background:var(--up);"></div>
+          <div class="bar-seg" style="width:0.00%; background:var(--s2);"></div>
+          <div class="bar-seg" style="width:4.44%; background:var(--s1);"></div>
+          <div class="bar-seg" style="width:95.56%; background:var(--faint); opacity:0.35;"></div>
+        </div>
+        <span class="count">진입 0 · 보유 0 · 필터 11</span>
+      </div>
+      
+      <div class="scan-row">
+        <span class="tag s2">S2</span>
+        <div class="bar-track">
+          <div class="bar-seg" style="width:0.40%; background:var(--up);"></div>
+          <div class="bar-seg" style="width:24.60%; background:var(--s2);"></div>
+          <div class="bar-seg" style="width:0.00%; background:var(--s1);"></div>
+          <div class="bar-seg" style="width:75.00%; background:var(--faint); opacity:0.35;"></div>
+        </div>
+        <span class="count">진입 1 · 보유 61</span>
+      </div>
+    </div>
+      
+    <div class="scan-card">
+      <div class="head"><h3>🇰🇷 국내 (2025-10-31 기준) (384종목)</h3></div>
+      
+      <div class="scan-row">
+        <span class="tag s1">S1</span>
+        <div class="bar-track">
+          <div class="bar-seg" style="width:0.52%; background:var(--up);"></div>
+          <div class="bar-seg" style="width:1.82%; background:var(--s2);"></div>
+          <div class="bar-seg" style="width:8.07%; background:var(--s1);"></div>
+          <div class="bar-seg" style="width:89.58%; background:var(--faint); opacity:0.35;"></div>
+        </div>
+        <span class="count">진입 2 · 보유 7 · 필터 31</span>
+      </div>
+      
+      <div class="scan-row">
+        <span class="tag s2">S2</span>
+        <div class="bar-track">
+          <div class="bar-seg" style="width:1.30%; background:var(--up);"></div>
+          <div class="bar-seg" style="width:40.36%; background:var(--s2);"></div>
+          <div class="bar-seg" style="width:0.00%; background:var(--s1);"></div>
+          <div class="bar-seg" style="width:58.33%; background:var(--faint); opacity:0.35;"></div>
+        </div>
+        <span class="count">진입 5 · 보유 155</span>
+      </div>
+    </div>
+    </div>
+    <div class="legend">진입=진입신호(오늘 채널돌파) · 보유=이 시스템대로 매매했다면 현재 보유중 · 필터=S1 휩쏘필터 제외(S1만 해당) — 전체 유니버스 스캔 결과이며 실제 페이퍼 포트폴리오 보유분(위 패널)과는 다를 수 있습니다.</div>
+  </div>
+
+  <div class="section">
+    <h2>오늘의 로그</h2>
+    <div class="log">
+      <div class="log-line">- [KR] 2025-10-31 데이터 컷오프로 동결 중 - 관리/신규진입 생략 (보유 0슬롯 그대로 유지)</div><div class="log-line">- [US] 빈 슬롯 7개, 조건 통과 신규 후보 없음</div><div class="log-line">- KR 현금: 50,000,000원, 보유 0슬롯 / US 현금: $5756.92, 보유 3슬롯</div>
+      <details class="log-tail">
+        <summary>최근 로그 더 보기 (25줄)</summary>
+        <div class="log-line"># 터틀 트레이딩 실전 가상매매 로그</div><div class="log-line">포트폴리오당 5천만원(원화)/5천만원 상당(달러), 슬롯 최대 10개(종목+시스템 조합).</div><div class="log-line">매일 `node paper_trade/daily_update.js` 실행 → 이 파일에 로그가 누적되고 `state.json`이 갱신됩니다.</div><div class="log-line">## 2026-08-07 (Day 1)</div><div class="log-line">- 시작 환율: 1 USD = 1420.08 KRW, 달러 포트폴리오 시작자본: $35209.29</div><div class="log-line">- [KR 매수] 025900 동화기업 (KOSDAQ, S1) @ 7,870 x 886주 = 6,972,820원 (채널대비 +23.7%)</div><div class="log-line">- [KR 매수] 282330 BGF리테일 (KOSPI, S1) @ 153,800 x 65주 = 9,997,000원 (채널대비 +14.6%)</div><div class="log-line">- [KR 매수] 282330 BGF리테일 (KOSPI, S2) @ 153,800 x 65주 = 9,997,000원 (채널대비 +9.9%)</div><div class="log-line">- [KR 매수] 347700 스피어 (KOSDAQ, S1) @ 23,150 x 166주 = 3,842,900원 (채널대비 +3.6%)</div><div class="log-line">- [KR 매수] 007070 GS리테일 (KOSPI, S1) @ 28,300 x 319주 = 9,027,700원 (채널대비 +2.9%)</div><div class="log-line">- [KR 매수] 008930 한미사이언스 (KOSPI, S1) @ 44,800 x 218주 = 9,766,400원 (채널대비 +2.1%)</div><div class="log-line">- [US 매수] INSM (S1) @ $132.5500030517578 x 59주 = $7820.45 (채널대비 +10.9%)</div><div class="log-line">- [US 매수] INSM (S2) @ $132.5500030517578 x 59주 = $7820.45 (채널대비 +10.9%)</div><div class="log-line">- [US 매수] BDX (S1) @ $177.07000732421875 x 78주 = $13811.46 (채널대비 +3.4%)</div><div class="log-line">- KR 현금: 396,180원, 보유 6슬롯 / US 현금: $5756.92, 보유 3슬롯</div><div class="log-line">## 2026-08-07 (Day 2)</div><div class="log-line">- [KR] 2025-10-31 데이터 컷오프로 동결 중 - 관리/신규진입 생략 (보유 6슬롯 그대로 유지)</div><div class="log-line">- [US] 빈 슬롯 7개, 조건 통과 신규 후보 없음</div><div class="log-line">- KR 현금: 396,180원, 보유 6슬롯 / US 현금: $5756.92, 보유 3슬롯</div><div class="log-line">## 2026-08-07 (정정)</div><div class="log-line">- [KR 되돌림] Day1에 진입된 6개 국내 슬롯(동화기업 S1, BGF리테일 S1/S2, 스피어 S1, GS리테일 S1, 한미사이언스 S1)을 전부 취소하고 현금을 5천만원으로 원복했습니다. 사유: 이 진입들은 2025-10-31 데이터 컷오프 정책이 확정되기 전, 버블구간이 섞인 왜곡된 N/채널 값으로 계산된 것이었고 + 컷오프 적용 후에는 KR 관리 자체가 동결되어 이 포지션들을 감시할 방법이 없었습니다. 국내는 컷오프가 풀릴 때까지 0슬롯 상태로 유지됩니다. 미국 포지션(INSM S1/S2, BDX S1)은 영향 없이 그대로 유지됩니다.</div><div class="log-line">## 2026-08-07 (Day 3)</div><div class="log-line">- [KR] 2025-10-31 데이터 컷오프로 동결 중 - 관리/신규진입 생략 (보유 0슬롯 그대로 유지)</div><div class="log-line">- [US] 빈 슬롯 7개, 조건 통과 신규 후보 없음</div><div class="log-line">- KR 현금: 50,000,000원, 보유 0슬롯 / US 현금: $5756.92, 보유 3슬롯</div>
+      </details>
+    </div>
+  </div>
+
+  <footer>
+    <span>매일 <code>node paper_trade/daily_update.js</code> 실행 → 이 파일 자동 갱신 → push 시 라이브 앱에도 반영</span>
+    <span>2026. 8. 7. 12시 49분 51초 KST 스냅샷</span>
+  </footer>
+</div>
+</body>
+</html>

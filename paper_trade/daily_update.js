@@ -23,13 +23,18 @@ const path = require('path');
 const usSource = require('../lib/usSource');
 const { CONFIG, computeNSeries, donchianHigh, donchianLow, passesLiquidity } = require('../lib/turtleIndicators');
 const { runBatched } = require('../lib/batch');
+const { renderDashboardHtml } = require('./renderDashboard');
 
 const STATE_PATH = path.join(__dirname, 'state.json');
 const LOG_PATH = path.join(__dirname, 'log.md');
+const DASHBOARD_PATH = path.join(__dirname, '..', 'public', 'portfolio_dashboard.html');
+const LIVE_APP_URL = 'https://turtle-screener-production-8299.up.railway.app'; // 시장 스캔 요약을 이 라이브 앱의 API에서 그대로 가져옴(중복 계산 안 함)
 const MAX_POSITIONS = 10; // 포트폴리오당 (종목,시스템) 슬롯 수
 const KRW_CAPITAL = 50_000_000;
 const USD_CAPITAL_KRW_EQUIV = 50_000_000;
 const RECENT_DAYS_BACK = 220; // 달력일 - N(20일)+최대채널(55일) 계산에 충분한 최근 구간만 사용
+
+let todayLines = []; // 오늘 appendLog()로 기록된 줄들 - 대시보드의 "오늘의 로그" 섹션용
 
 // ⚠️ 국내(KR)는 2025-11~2026년 상반기 코스피 버블+폭락 구간을 제외하기 위해 krSource.js에서
 // 조회 종료일을 2025-10-31(krSource.HISTORY_END_KR)로 고정해놨습니다(사용자 지시, 2026-08-07).
@@ -56,7 +61,10 @@ function loadState() {
   };
 }
 function saveState(state) { fs.writeFileSync(STATE_PATH, JSON.stringify(state, null, 2)); }
-function appendLog(text) { fs.appendFileSync(LOG_PATH, text + '\n'); }
+function appendLog(text) {
+  fs.appendFileSync(LOG_PATH, text + '\n');
+  todayLines.push(text);
+}
 
 async function fetchFx() {
   const fetch = require('node-fetch');
@@ -64,6 +72,41 @@ async function fetchFx() {
   const j = await res.json();
   const closes = j.chart.result[0].indicators.quote[0].close.filter(c => c != null);
   return closes[closes.length - 1];
+}
+
+/**
+ * 종목 하나(s1/s2 status 포함)의 배열을 S1/S2 상태분포로 집계 - public/index.html의
+ * renderSystemStrip과 동일한 집계 로직(대시보드용으로 여기서도 필요해서 복제, 원본은 프론트 JS라 서버쪽에서 재사용 불가).
+ */
+function summarizeScan(stocks) {
+  const total = stocks.length;
+  const countFor = (key) => {
+    const c = { ENTRY_SIGNAL: 0, IN_POSITION: 0, FILTERED: 0, WATCHING: 0 };
+    stocks.forEach(s => { c[s[key].status] = (c[s[key].status] || 0) + 1; });
+    return c;
+  };
+  return { total, s1: countFor('s1'), s2: countFor('s2') };
+}
+
+/**
+ * 라이브 배포 앱의 스크리너 API에서 시장 스캔 요약을 가져옴(전체이력 기준이라 여기서 다시 계산 안 함).
+ * 실패해도 null만 반환하고 절대 던지지 않음 - 대시보드의 부가 섹션 하나 때문에 포지션 관리가 깨지면 안 됨.
+ */
+async function fetchLiveScan(market) {
+  try {
+    const fetch = require('node-fetch');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    const res = await fetch(`${LIVE_APP_URL}/api/screen/${market}`, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data.stocks)) return null;
+    return summarizeScan(data.stocks);
+  } catch (err) {
+    console.warn(`[dashboard] ${market} 스캔 조회 실패:`, err.message);
+    return null;
+  }
 }
 
 /**
@@ -116,6 +159,7 @@ async function managePositions(portfolio, cashField, source, sizingCapital, sinc
       addedUnits++;
     }
     pos._addedToday = addedUnits;
+    pos._lastClose = lastClose; // 대시보드 평가손익 표시용 (main()에서 저장 전에 제거함)
     stillHeld.push(pos);
   }
   portfolio.positions = stillHeld;
@@ -178,6 +222,7 @@ function enterPositions(portfolio, cashField, candidates, openSlots, sizingCapit
 }
 
 async function main() {
+  todayLines = []; // 이번 실행분만 기록 (여러 번 실행돼도 이전 실행의 줄이 안 섞이도록)
   const state = loadState();
   state.dayCount++;
   const d = today();
@@ -206,9 +251,12 @@ async function main() {
     state.us.trades.push(e);
     appendLog(`- [US 매도] ${e.ticker} (${e.system}) - 청산 @ $${e.exitPrice} x ${e.shares}주, 손익 $${e.pnl.toFixed(2)}`);
   }
+  const usLastPrices = new Map(); // 'ticker_system' -> 최근 종가 (대시보드 평가손익 표시용)
   for (const pos of state.us.positions) {
+    if (pos._lastClose !== undefined) usLastPrices.set(`${pos.ticker}_${pos.system}`, pos._lastClose);
     if (pos._addedToday) appendLog(`- [US 유닛추가] ${pos.ticker} (${pos.system}) - ${pos._addedToday}유닛 추가, 현재 ${pos.units.length}/${CONFIG.maxUnits}유닛`);
     delete pos._addedToday;
+    delete pos._lastClose; // 저장되는 state.json에는 안 남기고 위 Map에만 남김
   }
 
   const usHeld = new Set(state.us.positions.map(p => `${p.ticker}_${p.system}`));
@@ -227,6 +275,28 @@ async function main() {
 
   saveState(state);
   appendLog(`- KR 현금: ${Math.round(state.kr.cash).toLocaleString()}원, 보유 ${state.kr.positions.length}슬롯 / US 현금: $${state.us.cashUsd.toFixed(2)}, 보유 ${state.us.positions.length}슬롯`);
+
+  // ---- 정적 대시보드(portfolio_dashboard.html) 생성 ----
+  // 여기서 뭔가 실패해도(라이브 앱 응답 없음 등) state.json은 이미 저장됐으니 포지션 관리 자체는
+  // 안전합니다 - 대시보드 생성만 별도로 try/catch.
+  try {
+    const [usScan, krScan] = await Promise.all([fetchLiveScan('us'), fetchLiveScan('kr')]);
+    const recentLogTail = fs.readFileSync(LOG_PATH, 'utf8').split('\n').filter(l => l.trim()).slice(-40);
+    const html = renderDashboardHtml({
+      state,
+      todayLines: todayLines.filter(l => l.trim()),
+      recentLogTail,
+      scan: { us: usScan, kr: krScan },
+      usLastPrices,
+      generatedAt: new Date().toISOString(),
+      liveAppUrl: LIVE_APP_URL,
+    });
+    fs.writeFileSync(DASHBOARD_PATH, html);
+    console.log('dashboard written to', DASHBOARD_PATH);
+  } catch (err) {
+    console.warn('[dashboard] 생성 실패(포지션 관리는 정상 완료됨):', err.message);
+  }
+
   console.log('done, day', state.dayCount);
 }
 
