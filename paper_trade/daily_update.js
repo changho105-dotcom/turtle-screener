@@ -19,7 +19,7 @@
 
 const fs = require('fs');
 const path = require('path');
-// krSource는 현재 국내(KR) 컷오프로 이 스크립트에서 미사용 - 재개 시 require('../lib/krSource')로 다시 추가
+const krSource = require('../lib/krSource');
 const usSource = require('../lib/usSource');
 const { CONFIG, computeNSeries, donchianHigh, donchianLow, passesLiquidity } = require('../lib/turtleIndicators');
 const { runBatched } = require('../lib/batch');
@@ -36,19 +36,22 @@ const RECENT_DAYS_BACK = 220; // 달력일 - N(20일)+최대채널(55일) 계산
 
 let todayLines = []; // 오늘 appendLog()로 기록된 줄들 - 대시보드의 "오늘의 로그" 섹션용
 
-// ⚠️ 국내(KR)는 2025-11~2026년 상반기 코스피 버블+폭락 구간을 제외하기 위해 krSource.js에서
-// 조회 종료일을 2025-10-31(krSource.HISTORY_END_KR)로 고정해놨습니다(사용자 지시, 2026-08-07).
-// 이 스크립트가 "오늘" 기준으로 recentSince()를 계산하면 국내는 since(오늘-220일) >
-// until(2025-10-31)이 되어 조회 자체가 깨지므로, 아래 main()의 KR 섹션은 관리/신규진입을
-// 통째로 건너뜁니다(관련 함수 호출 자체를 안 함). 컷오프를 풀면 US처럼 recentSince()를 넘겨서
-// managePositions/scanCandidates를 다시 호출하면 됩니다.
+// 국내(KR) 데이터 컷오프는 lib/krSource.js의 HISTORY_END_KR 하나로 켜고 끕니다(2026-08-07 해제,
+// null = 컷오프 없음). 컷오프가 켜져있으면(과거 날짜로 고정) recentSince()가 미래 날짜를 요청하는
+// 꼴이 되어 조회가 깨지므로, 이 스크립트는 KR용 기준일을 krSource의 실제 종료일에 맞춰 계산합니다.
+function krCutoffActive() { return krSource.HISTORY_END_KR !== null; }
 
 function today() { return new Date().toISOString().slice(0, 10); }
 function round(v, digits = 2) { const m = Math.pow(10, digits); return Math.round(v * m) / m; }
-function recentSince() { // 오늘 기준 최근 구간 시작일 (현재는 US에만 사용 - KR은 위 설명 참고)
-  const d = new Date();
-  d.setDate(d.getDate() - RECENT_DAYS_BACK);
-  return d.toISOString().slice(0, 10);
+function addDaysStr(dateStr, delta) {
+  const dt = new Date(`${dateStr}T00:00:00Z`);
+  dt.setUTCDate(dt.getUTCDate() + delta);
+  return dt.toISOString().slice(0, 10);
+}
+function recentSince() { return addDaysStr(today(), -RECENT_DAYS_BACK); } // US용 - 실제 오늘 기준
+function recentSinceKR() { // KR용 - 컷오프가 켜져있으면 그 날짜 기준, 꺼져있으면 US와 동일(오늘 기준)
+  const until = krSource.HISTORY_END_KR || today();
+  return addDaysStr(until, -RECENT_DAYS_BACK);
 }
 
 function loadState() {
@@ -236,44 +239,83 @@ async function main() {
     appendLog(`- 시작 환율: 1 USD = ${fx.toFixed(2)} KRW, 달러 포트폴리오 시작자본: $${state.us.startCapitalUsd.toFixed(2)}`);
   }
 
+  // state.json에 컷오프 상태를 같이 저장해둠 - paper-trade.html/renderDashboard.js가 krSource를
+  // import 안 해도(브라우저/렌더러 쪽에서) 현재 동결 여부·날짜를 알 수 있도록.
+  state.kr.cutoffActive = krCutoffActive();
+  state.kr.cutoffDate = krSource.HISTORY_END_KR; // null | 'YYYY-MM-DD'
+
   // ---- KR 보유 관리 ----
-  // ⚠️ 국내는 2025-11~2026년 상반기 코스피 버블+폭락 구간을 제외하기 위해 데이터가
-  // 2025-10-31로 고정됨(krSource.js HISTORY_END_KR, 사용자 지시 2026-08-07). 이 상태에서는
-  // "오늘" 기준 실시간 관리/신규진입이 성립하지 않으므로(과거 고정 데이터를 매일 다시 보는 셈)
-  // 국내 포트폴리오는 이 컷오프가 풀릴 때까지 완전히 동결합니다 - 손절/유닛추가/신규진입 전부 생략.
-  // 2026-08-07 Day1에 이미 진입된 6개 슬롯(라이브 데이터 기준)은 그대로 유지되며, 이 건은
-  // 컷오프 정책 확정 전에 진입된 것이라 별도로 사용자 확인이 필요합니다.
-  appendLog(`- [KR] 2025-10-31 데이터 컷오프로 동결 중 - 관리/신규진입 생략 (보유 ${state.kr.positions.length}슬롯 그대로 유지)`);
+  // ⚠️ 이 블록 전체를 try/catch로 감쌉니다. 예전에 US 종목리스트 소스(yfiua.github.io)가
+  // XML 에러 페이지를 반환해서 스크립트 전체가 죽은 적이 있는데, 그 시점이 KR 매수 로그를
+  // 이미 남긴 "뒤"였지만 saveState()보다는 "앞"이라 로그와 state.json이 어긋난 적이 있었습니다
+  // (로그엔 매수 기록이 남았는데 state.json엔 저장 안 됨). 이제 한쪽 시장이 실패해도 다른 쪽
+  // 결과는 반드시 저장되도록 시장별로 독립적으로 감쌉니다.
+  const krLastPrices = new Map(); // 'ticker_system' -> 최근 종가 (대시보드 평가손익 표시용)
+  try {
+    const krExits = await managePositions(state.kr, 'cash', krSource, KRW_CAPITAL, recentSinceKR());
+    for (const e of krExits) {
+      state.kr.trades.push(e);
+      appendLog(`- [KR 매도] ${e.ticker} ${e.name || ''} (${e.system}) - 청산 @ ${Math.round(e.exitPrice).toLocaleString()} x ${e.shares}주, 손익 ${Math.round(e.pnl).toLocaleString()}원`);
+    }
+    for (const pos of state.kr.positions) {
+      if (pos._lastClose !== undefined) krLastPrices.set(`${pos.ticker}_${pos.system}`, pos._lastClose);
+      if (pos._addedToday) appendLog(`- [KR 유닛추가] ${pos.ticker} ${pos.name || ''} (${pos.system}) - ${pos._addedToday}유닛 추가, 현재 ${pos.units.length}/${CONFIG.maxUnits}유닛`);
+      delete pos._addedToday;
+      delete pos._lastClose;
+    }
+
+    const krHeld = new Set(state.kr.positions.map(p => `${p.ticker}_${p.system}`));
+    const krOpenSlots = MAX_POSITIONS - state.kr.positions.length;
+    if (krOpenSlots > 0) {
+      const [kospiList, kosdaqList] = await Promise.all([krSource.fetchStockList(0, 4), krSource.fetchStockList(1, 4)]);
+      const candidates = await scanCandidates([...kospiList, ...kosdaqList], krSource, 'KR', krHeld, recentSinceKR());
+      const entries = enterPositions(state.kr, 'cash', candidates, krOpenSlots, KRW_CAPITAL);
+      for (const en of entries) {
+        appendLog(`- [KR 매수] ${en.ticker} ${en.name || ''} (${en.market}, ${en.system}) @ ${Math.round(en.lastClose).toLocaleString()} x ${en.shares}주 = ${Math.round(en.cost).toLocaleString()}원 (채널대비 +${(en.strength * 100).toFixed(1)}%)`);
+      }
+      if (entries.length === 0) appendLog(`- [KR] 빈 슬롯 ${krOpenSlots}개, 조건 통과 신규 후보 없음`);
+    } else {
+      appendLog(`- [KR] ${MAX_POSITIONS}슬롯 전부 보유 중, 신규 스캔 생략`);
+    }
+  } catch (err) {
+    console.error('[KR] 처리 실패:', err.message);
+    appendLog(`- [KR] 처리 중 오류로 중단: ${err.message} (이미 반영된 손절/유닛추가는 유지, 이번 회차 신규진입만 스킵됐을 수 있음)`);
+  }
 
   // ---- US 보유 관리 ----
-  const usExits = await managePositions(state.us, 'cashUsd', usSource, state.us.startCapitalUsd, recentSince());
-  for (const e of usExits) {
-    state.us.trades.push(e);
-    appendLog(`- [US 매도] ${e.ticker} (${e.system}) - 청산 @ $${e.exitPrice} x ${e.shares}주, 손익 $${e.pnl.toFixed(2)}`);
-  }
   const usLastPrices = new Map(); // 'ticker_system' -> 최근 종가 (대시보드 평가손익 표시용)
-  for (const pos of state.us.positions) {
-    if (pos._lastClose !== undefined) usLastPrices.set(`${pos.ticker}_${pos.system}`, pos._lastClose);
-    if (pos._addedToday) appendLog(`- [US 유닛추가] ${pos.ticker} (${pos.system}) - ${pos._addedToday}유닛 추가, 현재 ${pos.units.length}/${CONFIG.maxUnits}유닛`);
-    delete pos._addedToday;
-    delete pos._lastClose; // 저장되는 state.json에는 안 남기고 위 Map에만 남김
-  }
-
-  const usHeld = new Set(state.us.positions.map(p => `${p.ticker}_${p.system}`));
-  const usOpenSlots = MAX_POSITIONS - state.us.positions.length;
-  if (usOpenSlots > 0) {
-    const stockList = await usSource.fetchStockList();
-    const candidates = await scanCandidates(stockList, usSource, 'US', usHeld, recentSince());
-    const entries = enterPositions(state.us, 'cashUsd', candidates, usOpenSlots, state.us.startCapitalUsd);
-    for (const en of entries) {
-      appendLog(`- [US 매수] ${en.ticker} (${en.system}) @ $${en.lastClose} x ${en.shares}주 = $${en.cost.toFixed(2)} (채널대비 +${(en.strength * 100).toFixed(1)}%)`);
+  try {
+    const usExits = await managePositions(state.us, 'cashUsd', usSource, state.us.startCapitalUsd, recentSince());
+    for (const e of usExits) {
+      state.us.trades.push(e);
+      appendLog(`- [US 매도] ${e.ticker} (${e.system}) - 청산 @ $${e.exitPrice} x ${e.shares}주, 손익 $${e.pnl.toFixed(2)}`);
     }
-    if (entries.length === 0) appendLog(`- [US] 빈 슬롯 ${usOpenSlots}개, 조건 통과 신규 후보 없음`);
-  } else {
-    appendLog(`- [US] ${MAX_POSITIONS}슬롯 전부 보유 중, 신규 스캔 생략`);
+    for (const pos of state.us.positions) {
+      if (pos._lastClose !== undefined) usLastPrices.set(`${pos.ticker}_${pos.system}`, pos._lastClose);
+      if (pos._addedToday) appendLog(`- [US 유닛추가] ${pos.ticker} (${pos.system}) - ${pos._addedToday}유닛 추가, 현재 ${pos.units.length}/${CONFIG.maxUnits}유닛`);
+      delete pos._addedToday;
+      delete pos._lastClose; // 저장되는 state.json에는 안 남기고 위 Map에만 남김
+    }
+
+    const usHeld = new Set(state.us.positions.map(p => `${p.ticker}_${p.system}`));
+    const usOpenSlots = MAX_POSITIONS - state.us.positions.length;
+    if (usOpenSlots > 0) {
+      const stockList = await usSource.fetchStockList();
+      const candidates = await scanCandidates(stockList, usSource, 'US', usHeld, recentSince());
+      const entries = enterPositions(state.us, 'cashUsd', candidates, usOpenSlots, state.us.startCapitalUsd);
+      for (const en of entries) {
+        appendLog(`- [US 매수] ${en.ticker} (${en.system}) @ $${en.lastClose} x ${en.shares}주 = $${en.cost.toFixed(2)} (채널대비 +${(en.strength * 100).toFixed(1)}%)`);
+      }
+      if (entries.length === 0) appendLog(`- [US] 빈 슬롯 ${usOpenSlots}개, 조건 통과 신규 후보 없음`);
+    } else {
+      appendLog(`- [US] ${MAX_POSITIONS}슬롯 전부 보유 중, 신규 스캔 생략`);
+    }
+  } catch (err) {
+    console.error('[US] 처리 실패:', err.message);
+    appendLog(`- [US] 처리 중 오류로 중단: ${err.message} (이미 반영된 손절/유닛추가는 유지, 이번 회차 신규진입만 스킵됐을 수 있음)`);
   }
 
-  saveState(state);
+  saveState(state); // KR/US 중 한쪽이 위에서 실패해도 항상 실행 - 성공한 쪽 결과는 반드시 저장됨
   appendLog(`- KR 현금: ${Math.round(state.kr.cash).toLocaleString()}원, 보유 ${state.kr.positions.length}슬롯 / US 현금: $${state.us.cashUsd.toFixed(2)}, 보유 ${state.us.positions.length}슬롯`);
 
   // ---- 정적 대시보드(portfolio_dashboard.html) 생성 ----
@@ -288,6 +330,7 @@ async function main() {
       recentLogTail,
       scan: { us: usScan, kr: krScan },
       usLastPrices,
+      krLastPrices,
       generatedAt: new Date().toISOString(),
       liveAppUrl: LIVE_APP_URL,
     });

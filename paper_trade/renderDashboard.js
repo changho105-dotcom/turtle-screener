@@ -95,23 +95,27 @@ function renderLogLines(lines) {
  * @param {{us: object|null, kr: object|null}} p.scan - 시장 스캔 요약. 각각
  *   { total, s1:{ENTRY_SIGNAL,IN_POSITION,FILTERED,WATCHING}, s2:{...} } 또는 실패 시 null
  * @param {Map} p.usLastPrices - 'ticker_system' -> 최근 종가 (US 포지션 평가손익용)
+ * @param {Map} p.krLastPrices - 'ticker_system' -> 최근 종가 (KR 포지션 평가손익용, 컷오프 해제 후부터 유효)
  * @param {string} p.generatedAt - ISO 타임스탬프
  * @param {string} p.liveAppUrl
  */
-function renderDashboardHtml({ state, todayLines, recentLogTail, scan, usLastPrices, generatedAt, liveAppUrl }) {
-  const krCostBasis = state.kr.positions.reduce((a, p) => a + p.units.reduce((aa, u) => aa + u.entryPrice * u.shares, 0), 0);
+function renderDashboardHtml({ state, todayLines, recentLogTail, scan, usLastPrices, krLastPrices, generatedAt, liveAppUrl }) {
+  // 현재가(lastPrices)가 있으면 시가평가, 없으면(오늘 신규진입 등) 원가로 대체 - 개별 포지션 카드의
+  // 평가손익%와 이 합계가 어긋나지 않도록 동일한 가격 소스를 씀. KR/US 공용 계산.
+  function marketValue(positions, lastPrices) {
+    return positions.reduce((a, p) => {
+      const shares = p.units.reduce((aa, u) => aa + u.shares, 0);
+      const cost = p.units.reduce((aa, u) => aa + u.entryPrice * u.shares, 0);
+      const avgEntry = shares > 0 ? cost / shares : 0;
+      const key = `${p.ticker}_${p.system}`;
+      const lastPrice = lastPrices instanceof Map && lastPrices.has(key) ? lastPrices.get(key) : avgEntry;
+      return a + lastPrice * shares;
+    }, 0);
+  }
+  const krEquity = state.kr.cash + marketValue(state.kr.positions, krLastPrices);
+  const usEquity = state.us.cashUsd + marketValue(state.us.positions, usLastPrices);
   const usCostBasis = state.us.positions.reduce((a, p) => a + p.units.reduce((aa, u) => aa + u.entryPrice * u.shares, 0), 0);
-  // 현재가(usLastPrices)가 있으면 시가평가, 없으면(오늘 신규진입 등) 원가로 대체 - 개별 포지션 카드의
-  // 평가손익%와 이 합계가 어긋나지 않도록 동일한 가격 소스를 씀.
-  const usMarketValue = state.us.positions.reduce((a, p) => {
-    const shares = p.units.reduce((aa, u) => aa + u.shares, 0);
-    const cost = p.units.reduce((aa, u) => aa + u.entryPrice * u.shares, 0);
-    const avgEntry = shares > 0 ? cost / shares : 0;
-    const key = `${p.ticker}_${p.system}`;
-    const lastPrice = usLastPrices instanceof Map && usLastPrices.has(key) ? usLastPrices.get(key) : avgEntry;
-    return a + lastPrice * shares;
-  }, 0);
-  const usEquity = state.us.cashUsd + usMarketValue;
+  const krCutoffActive = !!state.kr.cutoffActive;
   const genDate = new Date(generatedAt);
   const genLabel = genDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
 
@@ -220,8 +224,7 @@ function renderDashboardHtml({ state, todayLines, recentLogTail, scan, usLastPri
     <div class="chip"><div class="k">시작일 · 경과</div><div class="v">${esc(state.startDate)}</div><div class="sub">Day ${state.dayCount}</div></div>
     <div class="chip">
       <div class="k">한화 포트폴리오</div>
-      ${state.kr.positions.length === 0 ? '<div class="v frozen">데이터 동결</div><div class="sub">2025-10-31 컷오프 · 0/10 슬롯</div>'
-        : `<div class="v">${fmtKrw(state.kr.cash + krCostBasis)}</div><div class="sub">${state.kr.positions.length}/10 슬롯</div>`}
+      <div class="v">${fmtKrw(krEquity)}</div><div class="sub">${state.kr.positions.length}/10 슬롯</div>
     </div>
     <div class="chip"><div class="k">달러 포트폴리오</div><div class="v">${fmtUsd(usEquity)}</div>
       <div class="sub">현금 ${fmtUsd(state.us.cashUsd)} + 보유원가 ${fmtUsd(usCostBasis)}</div></div>
@@ -236,12 +239,10 @@ function renderDashboardHtml({ state, todayLines, recentLogTail, scan, usLastPri
   <div class="section panels">
     <div class="panel">
       <div class="panel-head"><h3>🇰🇷 한화 포트폴리오</h3><span class="slots">${state.kr.positions.length} / 10 슬롯</span></div>
-      ${state.kr.positions.length === 0 ? '<div class="frozen-banner">⚠️ 국내 데이터가 2025-10-31로 고정되어 있습니다(코스피 버블·폭락 구간 제외 목적). 이 컷오프가 풀릴 때까지 관리·신규진입을 전부 생략합니다.</div>' : ''}
+      ${krCutoffActive ? `<div class="frozen-banner">⚠️ 국내 데이터가 ${esc(state.kr.cutoffDate || '')}까지로 고정되어 있습니다. 실시간이 아니라 그 시점 기준 데이터로 관리됩니다.</div>` : ''}
       <div class="stat-line"><span>현금</span><b>${fmtKrw(state.kr.cash)}</b></div>
       <div class="stat-line"><span>실현손익</span><b>${fmtKrw(state.kr.realizedPnl)}</b></div>
-      ${renderPositions(state.kr.positions, false, null) /* lastPrices=null → 항상 평단대비 0%.
-        KR은 현재 0포지션이라 문제 없음. 컷오프 풀려 KR 포지션이 다시 생기면 daily_update.js가
-        US처럼 krLastPrices Map을 만들어 넘겨줘야 실제 평가손익이 보임(JS 주석 - HTML엔 안 남음). */}
+      ${renderPositions(state.kr.positions, false, krLastPrices)}
     </div>
     <div class="panel">
       <div class="panel-head"><h3>🇺🇸 달러 포트폴리오</h3><span class="slots">${state.us.positions.length} / 10 슬롯</span></div>
@@ -256,7 +257,7 @@ function renderDashboardHtml({ state, todayLines, recentLogTail, scan, usLastPri
     <h2>오늘의 시장 스캔</h2>
     <div class="scan">
       ${renderScanCard('🇺🇸 미국', scan.us)}
-      ${renderScanCard('🇰🇷 국내 (2025-10-31 기준)', scan.kr)}
+      ${renderScanCard(krCutoffActive ? `🇰🇷 국내 (${state.kr.cutoffDate} 기준)` : '🇰🇷 국내', scan.kr)}
     </div>
     <div class="legend">진입=진입신호(오늘 채널돌파) · 보유=이 시스템대로 매매했다면 현재 보유중 · 필터=S1 휩쏘필터 제외(S1만 해당) — 전체 유니버스 스캔 결과이며 실제 페이퍼 포트폴리오 보유분(위 패널)과는 다를 수 있습니다.</div>
   </div>

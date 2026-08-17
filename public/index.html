@@ -133,9 +133,8 @@
   </div>
 </header>
 
-<div id="krFrozenBanner" style="display:none; background:rgba(240,85,79,0.12); border-bottom:1px solid var(--down); color:var(--down); font-family:var(--mono); font-size:12px; padding:10px 24px;">
-  ⚠️ 국내(KR) 데이터는 2025-11~2026년 상반기 코스피 버블+폭락 구간을 제외하기 위해 <b>2025-10-31까지로 고정</b>되어 있습니다. 실시간 현재가·신호가 아니라 그 시점 기준 데이터입니다. 페이퍼 트레이더의 국내 포지션도 이 컷오프 동안 동결됩니다.
-</div>
+<!-- 국내 데이터 컷오프가 걸려있을 때만 JS가 내용을 채우고 보여줌(서버 /api/screen/kr 응답의 krCutoff 값 기준) -->
+<div id="krFrozenBanner" style="display:none; background:rgba(240,85,79,0.12); border-bottom:1px solid var(--down); color:var(--down); font-family:var(--mono); font-size:12px; padding:10px 24px;"></div>
 <div class="system-strip" id="systemStrip"></div>
 
 <main>
@@ -172,7 +171,7 @@ async function load(market) {
   currentMarket = market;
   document.getElementById('backtestControls').style.display = market === 'backtest' ? 'flex' : 'none';
   document.getElementById('checklistKey').style.display = market === 'backtest' ? 'none' : 'block';
-  document.getElementById('krFrozenBanner').style.display = market === 'kr' ? 'block' : 'none';
+  document.getElementById('krFrozenBanner').style.display = 'none'; // 실제 컷오프 여부는 API 응답(krCutoff)으로 판단 - 아래에서 다시 설정
 
   if (market === 'backtest') {
     document.getElementById('systemStrip').innerHTML = '';
@@ -190,6 +189,11 @@ async function load(market) {
       throw new Error(detail);
     }
     const data = await res.json();
+    if (market === 'kr' && data.krCutoff) {
+      const banner = document.getElementById('krFrozenBanner');
+      banner.textContent = `⚠️ 국내(KR) 데이터가 ${data.krCutoff}까지로 고정되어 있습니다. 실시간 현재가·신호가 아니라 그 시점 기준 데이터입니다.`;
+      banner.style.display = 'block';
+    }
     renderSystemStrip(data.stocks);
     allStocks = data.stocks;
     currentSort = { key: 'statusRank', dir: 'desc' };
@@ -505,7 +509,7 @@ async function loadChart(ticker, market) {
 }
 
 function renderChart(data, market) {
-  const { dates, closes, volumes, levels } = data;
+  const { dates, closes, volumes, levels, krCutoff } = data;
   if (!closes || !closes.length) {
     document.getElementById('chartModalBody').innerHTML = '<div class="error">차트 데이터가 없습니다.</div>';
     return;
@@ -578,7 +582,7 @@ function renderChart(data, market) {
       ${levels.S1.stopLevel || levels.S2.stopLevel ? `<span><span class="dot" style="background:var(--down);"></span>2N손절</span>` : ''}
       <span style="color:#2A2F37;">■ 거래량</span>
     </div>
-    <div style="font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:6px;">최근 ${closes.length}봉만 표시(전체 이력은 2010년부터지만 차트는 최근 구간만)${market === 'kr' ? ' · <span style="color:var(--down);">국내는 2025-10-31 데이터 컷오프로 그 시점까지만 표시됨</span>' : ''}</div>`;
+    <div style="font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:6px;">최근 ${closes.length}봉만 표시(전체 이력은 2010년부터지만 차트는 최근 구간만)${krCutoff ? ` · <span style="color:var(--down);">국내는 ${krCutoff} 데이터 컷오프로 그 시점까지만 표시됨</span>` : ''}</div>`;
 }
 
 load('kr');

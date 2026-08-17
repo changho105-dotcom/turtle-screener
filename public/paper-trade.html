@@ -90,7 +90,7 @@ async function load() {
   const cardsHtml = `
     <div class="card">
       <h2>한화 포트폴리오 (5천만원)</h2>
-      ${state.kr.positions.length === 0 ? '<div class="stat-row" style="color:var(--red);">⚠️ 국내 데이터 2025-10-31 컷오프로 동결 중 - 관리/신규진입 생략(스크리너 상단 배너 참고)</div>' : ''}
+      ${state.kr.cutoffActive ? `<div class="stat-row" style="color:var(--red);">⚠️ 국내 데이터 ${state.kr.cutoffDate || ''} 컷오프로 그 시점 기준으로 관리 중</div>` : ''}
       <div class="stat-row"><span>현금</span><b>${fmt(state.kr.cash)}원</b></div>
       <div class="stat-row"><span>보유 종목 매수원가 합</span><b>${fmt(krPosValue)}원</b></div>
       <div class="stat-row"><span>실현손익</span><b class="${state.kr.realizedPnl >= 0 ? 'pos' : 'neg'}">${state.kr.realizedPnl >= 0 ? '+' : ''}${fmt(state.kr.realizedPnl)}원</b></div>

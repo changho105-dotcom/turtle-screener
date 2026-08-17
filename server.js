@@ -69,6 +69,7 @@ async function screenKR() {
 
   const result = {
     updatedAt: new Date().toISOString(),
+    krCutoff: krSource.HISTORY_END_KR, // null이면 컷오프 없음(실시간), 문자열이면 그 날짜까지만 - 프론트가 배너 표시 여부를 이 값으로 판단
     fetchFailures, // 크롤링/데이터 조회 자체가 실패한 종목 수 (소스 이슈 감지용)
     excludedForLiquidity, // 유동성 미달로 제외된 종목 수
     stocks: rows.sort((a, b) => b.statusRank - a.statusRank),
@@ -220,7 +221,7 @@ app.get('/api/backtest/kr/compare/batch', async (req, res) => {
 
 const CHART_RENDER_BARS = 320; // 차트 SVG에는 최근 N봉만 잘라서 보냄 (전체 2010년치를 다 보내면 응답이 무거워짐)
 
-function buildChartPayload(ticker, ohlcv) {
+function buildChartPayload(ticker, ohlcv, extra = {}) {
   const { liveStatus } = runTurtleSystems(ohlcv); // 신호/채널/손절선은 항상 전체 이력 기준으로 정확히 계산
   const lastIndex = ohlcv.closes.length - 1;
   const levels = {};
@@ -242,6 +243,7 @@ function buildChartPayload(ticker, ohlcv) {
     volumes: slice(ohlcv.volumes),
     levels, // { S1: {entryLevel,exitLevel,stopLevel}, S2: {...} }
     liveStatus,
+    ...extra,
   };
 }
 
@@ -256,7 +258,7 @@ app.get('/api/chart/kr/:ticker', async (req, res) => {
     if (!ohlcv.closes.length) {
       return res.status(404).json({ error: `${ticker} 차트 데이터를 찾을 수 없습니다` });
     }
-    const payload = buildChartPayload(ticker, ohlcv);
+    const payload = buildChartPayload(ticker, ohlcv, { krCutoff: krSource.HISTORY_END_KR });
     cache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {

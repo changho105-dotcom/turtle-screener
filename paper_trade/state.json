@@ -1,14 +1,129 @@
 {
   "startDate": "2026-08-07",
-  "dayCount": 3,
+  "dayCount": 4,
   "kr": {
-    "cash": 50000000,
-    "positions": [],
+    "cash": 985680,
+    "positions": [
+      {
+        "ticker": "007340",
+        "name": "DN오토모티브",
+        "market": "KOSPI",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-17",
+            "entryPrice": 58900,
+            "shares": 137,
+            "nAtEntry": 3634.7800870342107
+          }
+        ],
+        "stopPrice": 51630.43982593158,
+        "nextAddPrice": 60717.39004351711
+      },
+      {
+        "ticker": "007340",
+        "name": "DN오토모티브",
+        "market": "KOSPI",
+        "system": "S2",
+        "units": [
+          {
+            "entryDate": "2026-08-17",
+            "entryPrice": 58900,
+            "shares": 137,
+            "nAtEntry": 3634.7800870342107
+          }
+        ],
+        "stopPrice": 51630.43982593158,
+        "nextAddPrice": 60717.39004351711
+      },
+      {
+        "ticker": "125490",
+        "name": "한라캐스트",
+        "market": "KOSDAQ",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-17",
+            "entryPrice": 12590,
+            "shares": 468,
+            "nAtEntry": 1066.9083818873855
+          }
+        ],
+        "stopPrice": 10456.183236225228,
+        "nextAddPrice": 13123.454190943692
+      },
+      {
+        "ticker": "181710",
+        "name": "NHN",
+        "market": "KOSPI",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-17",
+            "entryPrice": 74700,
+            "shares": 112,
+            "nAtEntry": 4425.772120824606
+          }
+        ],
+        "stopPrice": 65848.45575835078,
+        "nextAddPrice": 76912.8860604123
+      },
+      {
+        "ticker": "181710",
+        "name": "NHN",
+        "market": "KOSPI",
+        "system": "S2",
+        "units": [
+          {
+            "entryDate": "2026-08-17",
+            "entryPrice": 74700,
+            "shares": 112,
+            "nAtEntry": 4425.772120824606
+          }
+        ],
+        "stopPrice": 65848.45575835078,
+        "nextAddPrice": 76912.8860604123
+      },
+      {
+        "ticker": "445680",
+        "name": "큐리옥스바이오시스템즈",
+        "market": "KOSDAQ",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-17",
+            "entryPrice": 50600,
+            "shares": 98,
+            "nAtEntry": 5095.078043305708
+          }
+        ],
+        "stopPrice": 40409.843913388584,
+        "nextAddPrice": 53147.539021652854
+      },
+      {
+        "ticker": "319400",
+        "name": "현대무벡스",
+        "market": "KOSDAQ",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-17",
+            "entryPrice": 28000,
+            "shares": 189,
+            "nAtEntry": 2635.157751780335
+          }
+        ],
+        "stopPrice": 22729.68449643933,
+        "nextAddPrice": 29317.57887589017
+      }
+    ],
     "realizedPnl": 0,
-    "trades": []
+    "trades": [],
+    "cutoffActive": false,
+    "cutoffDate": null
   },
   "us": {
-    "cashUsd": 5756.92414217897,
+    "cashUsd": 1863.1641324133452,
     "startCapitalUsd": 35209.285073575455,
     "fxRateAtStart": 1420.0799560546875,
     "positions": [
@@ -59,6 +174,22 @@
         ],
         "stopPrice": 168.1201898414891,
         "nextAddPrice": 179.30746169490118
+      },
+      {
+        "ticker": "STX",
+        "name": "Seagate Technology Holdings",
+        "market": "US",
+        "system": "S1",
+        "units": [
+          {
+            "entryDate": "2026-08-17",
+            "entryPrice": 973.4400024414062,
+            "shares": 4,
+            "nAtEntry": 73.80341534047713
+          }
+        ],
+        "stopPrice": 825.8331717604519,
+        "nextAddPrice": 1010.3417101116448
       }
     ],
     "realizedPnl": 0,
