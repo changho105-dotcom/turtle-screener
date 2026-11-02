@@ -49,3 +49,9 @@
 - [KR 매수] 319400 현대무벡스 (KOSDAQ, S1) @ 28,000 x 189주 = 5,292,000원 (채널대비 +6.1%)
 - [US 매수] STX (S1) @ $973.4400024414062 x 4주 = $3893.76 (채널대비 +3.9%)
 - KR 현금: 985,680원, 보유 7슬롯 / US 현금: $1863.16, 보유 4슬롯
+
+## 2026-11-02 (Day 5)
+
+- [KR] 처리 중 오류로 중단: request to https://api.stock.naver.com/chart/domestic/item/007340/day?startDateTime=20260327&endDateTime=20261102 failed, reason: Failed to establish tunnel to api.stock.naver.com:443 via http://127.0.0.1:38671: HTTP/1.1 403 Forbidden (이미 반영된 손절/유닛추가는 유지, 이번 회차 신규진입만 스킵됐을 수 있음)
+- [US] 처리 중 오류로 중단: request to https://query1.finance.yahoo.com/v8/finance/chart/INSM?period1=1774569600&period2=1793657545&interval=1d failed, reason: Failed to establish tunnel to query1.finance.yahoo.com:443 via http://127.0.0.1:38671: HTTP/1.1 403 Forbidden (이미 반영된 손절/유닛추가는 유지, 이번 회차 신규진입만 스킵됐을 수 있음)
+- KR 현금: 985,680원, 보유 7슬롯 / US 현금: $1863.16, 보유 4슬롯
