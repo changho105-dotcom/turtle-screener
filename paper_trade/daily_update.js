@@ -70,7 +70,7 @@ function appendLog(text) {
 }
 
 async function fetchFx() {
-  const fetch = require('node-fetch');
+  const fetch = require('../lib/proxySetup');
   const res = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?range=5d&interval=1d', { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const j = await res.json();
   const closes = j.chart.result[0].indicators.quote[0].close.filter(c => c != null);
@@ -97,7 +97,7 @@ function summarizeScan(stocks) {
  */
 async function fetchLiveScan(market) {
   try {
-    const fetch = require('node-fetch');
+    const fetch = require('../lib/proxySetup');
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
     const res = await fetch(`${LIVE_APP_URL}/api/screen/${market}`, { signal: controller.signal });
