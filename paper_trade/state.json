@@ -1,164 +1,111 @@
 {
   "startDate": "2026-08-07",
-  "dayCount": 5,
+  "dayCount": 6,
   "kr": {
-    "cash": 985680,
-    "positions": [
+    "cash": 34824060,
+    "positions": [],
+    "realizedPnl": -15175940,
+    "trades": [
       {
         "ticker": "007340",
         "name": "DN오토모티브",
         "market": "KOSPI",
         "system": "S1",
-        "units": [
-          {
-            "entryDate": "2026-08-17",
-            "entryPrice": 58900,
-            "shares": 137,
-            "nAtEntry": 3634.7800870342107
-          }
-        ],
-        "stopPrice": 51630.43982593158,
-        "nextAddPrice": 60717.39004351711
+        "entryDate": "2026-08-17",
+        "unitsUsed": 1,
+        "avgEntryPrice": 58900,
+        "exitDate": "2026-11-04",
+        "exitPrice": 40050,
+        "pnl": -2582450,
+        "shares": 137
       },
       {
         "ticker": "007340",
         "name": "DN오토모티브",
         "market": "KOSPI",
         "system": "S2",
-        "units": [
-          {
-            "entryDate": "2026-08-17",
-            "entryPrice": 58900,
-            "shares": 137,
-            "nAtEntry": 3634.7800870342107
-          }
-        ],
-        "stopPrice": 51630.43982593158,
-        "nextAddPrice": 60717.39004351711
+        "entryDate": "2026-08-17",
+        "unitsUsed": 1,
+        "avgEntryPrice": 58900,
+        "exitDate": "2026-11-04",
+        "exitPrice": 40050,
+        "pnl": -2582450,
+        "shares": 137
       },
       {
         "ticker": "125490",
         "name": "한라캐스트",
         "market": "KOSDAQ",
         "system": "S1",
-        "units": [
-          {
-            "entryDate": "2026-08-17",
-            "entryPrice": 12590,
-            "shares": 468,
-            "nAtEntry": 1066.9083818873855
-          }
-        ],
-        "stopPrice": 10456.183236225228,
-        "nextAddPrice": 13123.454190943692
+        "entryDate": "2026-08-17",
+        "unitsUsed": 1,
+        "avgEntryPrice": 12590,
+        "exitDate": "2026-11-04",
+        "exitPrice": 9500,
+        "pnl": -1446120,
+        "shares": 468
       },
       {
         "ticker": "181710",
         "name": "NHN",
         "market": "KOSPI",
         "system": "S1",
-        "units": [
-          {
-            "entryDate": "2026-08-17",
-            "entryPrice": 74700,
-            "shares": 112,
-            "nAtEntry": 4425.772120824606
-          }
-        ],
-        "stopPrice": 65848.45575835078,
-        "nextAddPrice": 76912.8860604123
+        "entryDate": "2026-08-17",
+        "unitsUsed": 1,
+        "avgEntryPrice": 74700,
+        "exitDate": "2026-11-04",
+        "exitPrice": 48400,
+        "pnl": -2945600,
+        "shares": 112
       },
       {
         "ticker": "181710",
         "name": "NHN",
         "market": "KOSPI",
         "system": "S2",
-        "units": [
-          {
-            "entryDate": "2026-08-17",
-            "entryPrice": 74700,
-            "shares": 112,
-            "nAtEntry": 4425.772120824606
-          }
-        ],
-        "stopPrice": 65848.45575835078,
-        "nextAddPrice": 76912.8860604123
+        "entryDate": "2026-08-17",
+        "unitsUsed": 1,
+        "avgEntryPrice": 74700,
+        "exitDate": "2026-11-04",
+        "exitPrice": 48400,
+        "pnl": -2945600,
+        "shares": 112
       },
       {
         "ticker": "445680",
         "name": "큐리옥스바이오시스템즈",
         "market": "KOSDAQ",
         "system": "S1",
-        "units": [
-          {
-            "entryDate": "2026-08-17",
-            "entryPrice": 50600,
-            "shares": 98,
-            "nAtEntry": 5095.078043305708
-          }
-        ],
-        "stopPrice": 40409.843913388584,
-        "nextAddPrice": 53147.539021652854
+        "entryDate": "2026-08-17",
+        "unitsUsed": 1,
+        "avgEntryPrice": 50600,
+        "exitDate": "2026-11-04",
+        "exitPrice": 45650,
+        "pnl": -485100,
+        "shares": 98
       },
       {
         "ticker": "319400",
         "name": "현대무벡스",
         "market": "KOSDAQ",
         "system": "S1",
-        "units": [
-          {
-            "entryDate": "2026-08-17",
-            "entryPrice": 28000,
-            "shares": 189,
-            "nAtEntry": 2635.157751780335
-          }
-        ],
-        "stopPrice": 22729.68449643933,
-        "nextAddPrice": 29317.57887589017
+        "entryDate": "2026-08-17",
+        "unitsUsed": 1,
+        "avgEntryPrice": 28000,
+        "exitDate": "2026-11-04",
+        "exitPrice": 16420,
+        "pnl": -2188620,
+        "shares": 189
       }
     ],
-    "realizedPnl": 0,
-    "trades": [],
     "cutoffActive": false,
     "cutoffDate": null
   },
   "us": {
-    "cashUsd": 1863.1641324133452,
+    "cashUsd": 345.84372836061084,
     "startCapitalUsd": 35209.285073575455,
     "fxRateAtStart": 1420.0799560546875,
     "positions": [
-      {
-        "ticker": "INSM",
-        "name": "Insmed Incorporated",
-        "market": "US",
-        "system": "S1",
-        "units": [
-          {
-            "entryDate": "2026-08-07",
-            "entryPrice": 132.5500030517578,
-            "shares": 59,
-            "nAtEntry": 5.886974815602416
-          }
-        ],
-        "stopPrice": 120.77605342055298,
-        "nextAddPrice": 135.493490459559
-      },
-      {
-        "ticker": "INSM",
-        "name": "Insmed Incorporated",
-        "market": "US",
-        "system": "S2",
-        "units": [
-          {
-            "entryDate": "2026-08-07",
-            "entryPrice": 132.5500030517578,
-            "shares": 59,
-            "nAtEntry": 5.886974815602416
-          }
-        ],
-        "stopPrice": 120.77605342055298,
-        "nextAddPrice": 135.493490459559
-      },
       {
         "ticker": "BDX",
         "name": "Becton Dickinson",
@@ -176,23 +123,63 @@
         "nextAddPrice": 179.30746169490118
       },
       {
-        "ticker": "STX",
-        "name": "Seagate Technology Holdings",
+        "ticker": "DD",
+        "name": "DuPont",
         "market": "US",
         "system": "S1",
         "units": [
           {
-            "entryDate": "2026-08-17",
-            "entryPrice": 973.4400024414062,
-            "shares": 4,
-            "nAtEntry": 73.80341534047713
+            "entryDate": "2026-11-04",
+            "entryPrice": 153.4600067138672,
+            "shares": 106,
+            "nAtEntry": 3.2992386588538154
           }
         ],
-        "stopPrice": 825.8331717604519,
-        "nextAddPrice": 1010.3417101116448
+        "stopPrice": 146.86152939615957,
+        "nextAddPrice": 155.1096260432941
       }
     ],
-    "realizedPnl": 0,
-    "trades": []
+    "realizedPnl": -4785.220062255859,
+    "trades": [
+      {
+        "ticker": "INSM",
+        "name": "Insmed Incorporated",
+        "market": "US",
+        "system": "S1",
+        "entryDate": "2026-08-07",
+        "unitsUsed": 1,
+        "avgEntryPrice": 132.55,
+        "exitDate": "2026-11-04",
+        "exitPrice": 104.44,
+        "pnl": -1658.49,
+        "shares": 59
+      },
+      {
+        "ticker": "INSM",
+        "name": "Insmed Incorporated",
+        "market": "US",
+        "system": "S2",
+        "entryDate": "2026-08-07",
+        "unitsUsed": 1,
+        "avgEntryPrice": 132.55,
+        "exitDate": "2026-11-04",
+        "exitPrice": 104.44,
+        "pnl": -1658.49,
+        "shares": 59
+      },
+      {
+        "ticker": "STX",
+        "name": "Seagate Technology Holdings",
+        "market": "US",
+        "system": "S1",
+        "entryDate": "2026-08-17",
+        "unitsUsed": 1,
+        "avgEntryPrice": 973.44,
+        "exitDate": "2026-11-04",
+        "exitPrice": 606.38,
+        "pnl": -1468.24,
+        "shares": 4
+      }
+    ]
   }
 }

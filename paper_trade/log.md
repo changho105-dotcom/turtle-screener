@@ -55,3 +55,19 @@
 - [KR] 처리 중 오류로 중단: request to https://api.stock.naver.com/chart/domestic/item/007340/day?startDateTime=20260327&endDateTime=20261102 failed, reason: Failed to establish tunnel to api.stock.naver.com:443 via http://127.0.0.1:38671: HTTP/1.1 403 Forbidden (이미 반영된 손절/유닛추가는 유지, 이번 회차 신규진입만 스킵됐을 수 있음)
 - [US] 처리 중 오류로 중단: request to https://query1.finance.yahoo.com/v8/finance/chart/INSM?period1=1774569600&period2=1793657545&interval=1d failed, reason: Failed to establish tunnel to query1.finance.yahoo.com:443 via http://127.0.0.1:38671: HTTP/1.1 403 Forbidden (이미 반영된 손절/유닛추가는 유지, 이번 회차 신규진입만 스킵됐을 수 있음)
 - KR 현금: 985,680원, 보유 7슬롯 / US 현금: $1863.16, 보유 4슬롯
+
+## 2026-11-04 (Day 6)
+
+- [KR 매도] 007340 DN오토모티브 (S1) - 청산 @ 40,050 x 137주, 손익 -2,582,450원
+- [KR 매도] 007340 DN오토모티브 (S2) - 청산 @ 40,050 x 137주, 손익 -2,582,450원
+- [KR 매도] 125490 한라캐스트 (S1) - 청산 @ 9,500 x 468주, 손익 -1,446,120원
+- [KR 매도] 181710 NHN (S1) - 청산 @ 48,400 x 112주, 손익 -2,945,600원
+- [KR 매도] 181710 NHN (S2) - 청산 @ 48,400 x 112주, 손익 -2,945,600원
+- [KR 매도] 445680 큐리옥스바이오시스템즈 (S1) - 청산 @ 45,650 x 98주, 손익 -485,100원
+- [KR 매도] 319400 현대무벡스 (S1) - 청산 @ 16,420 x 189주, 손익 -2,188,620원
+- [KR] 빈 슬롯 10개, 조건 통과 신규 후보 없음
+- [US 매도] INSM (S1) - 청산 @ $104.44 x 59주, 손익 $-1658.49
+- [US 매도] INSM (S2) - 청산 @ $104.44 x 59주, 손익 $-1658.49
+- [US 매도] STX (S1) - 청산 @ $606.38 x 4주, 손익 $-1468.24
+- [US 매수] DD (S1) @ $153.4600067138672 x 106주 = $16266.76 (채널대비 +7.2%)
+- KR 현금: 34,824,060원, 보유 0슬롯 / US 현금: $345.84, 보유 2슬롯
