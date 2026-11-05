@@ -1,6 +1,6 @@
 {
   "startDate": "2026-08-07",
-  "dayCount": 7,
+  "dayCount": 8,
   "kr": {
     "cash": 34824060,
     "positions": [],
@@ -102,7 +102,7 @@
     "cutoffDate": null
   },
   "us": {
-    "cashUsd": 345.84372836061084,
+    "cashUsd": 2176.6227200598296,
     "startCapitalUsd": 35209.285073575455,
     "fxRateAtStart": 1420.0799560546875,
     "positions": [
@@ -123,23 +123,39 @@
         "nextAddPrice": 179.30746169490118
       },
       {
-        "ticker": "DD",
-        "name": "DuPont",
+        "ticker": "APP",
+        "name": "Applovin Corp",
         "market": "US",
         "system": "S1",
         "units": [
           {
-            "entryDate": "2026-11-04",
-            "entryPrice": 153.4600067138672,
-            "shares": 106,
-            "nAtEntry": 3.2992386588538154
+            "entryDate": "2026-11-05",
+            "entryPrice": 356.1000061035156,
+            "shares": 19,
+            "nAtEntry": 18.38483705215268
           }
         ],
-        "stopPrice": 146.86152939615957,
-        "nextAddPrice": 155.1096260432941
+        "stopPrice": 319.3303319992103,
+        "nextAddPrice": 365.29242462959195
+      },
+      {
+        "ticker": "APP",
+        "name": "Applovin Corp",
+        "market": "US",
+        "system": "S2",
+        "units": [
+          {
+            "entryDate": "2026-11-05",
+            "entryPrice": 356.1000061035156,
+            "shares": 19,
+            "nAtEntry": 18.38483705215268
+          }
+        ],
+        "stopPrice": 319.3303319992103,
+        "nextAddPrice": 365.29242462959195
       }
     ],
-    "realizedPnl": -4785.220062255859,
+    "realizedPnl": -5689.401550292969,
     "trades": [
       {
         "ticker": "INSM",
@@ -179,6 +195,19 @@
         "exitPrice": 606.38,
         "pnl": -1468.24,
         "shares": 4
+      },
+      {
+        "ticker": "DD",
+        "name": "DuPont",
+        "market": "US",
+        "system": "S1",
+        "entryDate": "2026-11-04",
+        "unitsUsed": 1,
+        "avgEntryPrice": 153.46,
+        "exitDate": "2026-11-05",
+        "exitPrice": 144.93,
+        "pnl": -904.18,
+        "shares": 106
       }
     ]
   }
