@@ -1,6 +1,6 @@
 {
   "startDate": "2026-08-07",
-  "dayCount": 22,
+  "dayCount": 23,
   "kr": {
     "cash": 34824060,
     "positions": [],
@@ -102,7 +102,7 @@
     "cutoffDate": null
   },
   "us": {
-    "cashUsd": 2176.6227200598296,
+    "cashUsd": 2949.454088339874,
     "startCapitalUsd": 35209.285073575455,
     "fxRateAtStart": 1420.0799560546875,
     "positions": [
@@ -126,22 +126,6 @@
         "ticker": "APP",
         "name": "Applovin Corp",
         "market": "US",
-        "system": "S1",
-        "units": [
-          {
-            "entryDate": "2026-11-05",
-            "entryPrice": 356.1000061035156,
-            "shares": 19,
-            "nAtEntry": 18.38483705215268
-          }
-        ],
-        "stopPrice": 319.3303319992103,
-        "nextAddPrice": 365.29242462959195
-      },
-      {
-        "ticker": "APP",
-        "name": "Applovin Corp",
-        "market": "US",
         "system": "S2",
         "units": [
           {
@@ -149,13 +133,19 @@
             "entryPrice": 356.1000061035156,
             "shares": 19,
             "nAtEntry": 18.38483705215268
+          },
+          {
+            "entryDate": "2026-11-20",
+            "entryPrice": 365.29242462959195,
+            "shares": 16,
+            "nAtEntry": 21.084560712728972
           }
         ],
-        "stopPrice": 319.3303319992103,
-        "nextAddPrice": 365.29242462959195
+        "stopPrice": 323.123303204134,
+        "nextAddPrice": 375.8347049859564
       }
     ],
-    "realizedPnl": -5689.401550292969,
+    "realizedPnl": -5837.79150390625,
     "trades": [
       {
         "ticker": "INSM",
@@ -208,6 +198,19 @@
         "exitPrice": 144.93,
         "pnl": -904.18,
         "shares": 106
+      },
+      {
+        "ticker": "APP",
+        "name": "Applovin Corp",
+        "market": "US",
+        "system": "S1",
+        "entryDate": "2026-11-05",
+        "unitsUsed": 1,
+        "avgEntryPrice": 356.1,
+        "exitDate": "2026-11-20",
+        "exitPrice": 348.29,
+        "pnl": -148.39,
+        "shares": 19
       }
     ]
   }
